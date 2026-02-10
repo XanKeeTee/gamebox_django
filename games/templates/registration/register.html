@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - GameBox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { font-family: sans-serif; background-color: #050505; color: white; }</style>
+</head>
+<body class="min-h-screen flex items-center justify-center relative overflow-hidden">
+    
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/20 to-pink-600/20 rounded-full blur-3xl opacity-50"></div>
+
+    <div class="relative z-10 w-full max-w-md p-8 bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black tracking-tighter mb-2">Únete al Club</h1>
+            <p class="text-gray-400">Crea tu perfil y empieza tu colección.</p>
+        </div>
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div>
+                <label class="block text-sm font-bold text-gray-400 mb-2">{{ field.label }}</label>
+                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" 
+                       class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 transition">
+                {% if field.help_text %}
+                    <p class="text-xs text-gray-600 mt-1">{{ field.help_text|safe }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                    <p class="text-xs text-red-400 mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30 mt-4">
+                Crear Cuenta
+            </button>
+        </form>
+
+        <div class="mt-8 text-center text-sm text-gray-500">
+            ¿Ya tienes cuenta? <a href="{% url 'login' %}" class="text-indigo-400 hover:text-white font-bold transition">Inicia Sesión</a>
+        </div>
+    </div>
+</body>
+</html>

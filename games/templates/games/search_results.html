@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar: {{ query }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;700;800&display=swap');
+        body { font-family: 'Manrope', sans-serif; background-color: #050505; color: white; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <nav class="p-6 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex items-center gap-4">
+            <a href="{% url 'index' %}" class="font-bold text-gray-400 hover:text-white">← Inicio</a>
+            <h1 class="text-xl font-bold">Resultados para "<span class="text-indigo-400">{{ query }}</span>"</h1>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        {% if games %}
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {% for game in games %}
+                <a href="{% url 'detail' game.id %}" class="group block relative cursor-pointer">
+                    <div class="relative aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-800 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-indigo-500/20 ring-1 ring-white/5">
+                        {% if game.cover %}
+                            <img src="https:{{ game.cover.url }}" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        {% endif %}
+                        
+                        <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+                            <h3 class="text-sm font-bold leading-tight text-gray-200 group-hover:text-white">{{ game.name }}</h3>
+                            {% if game.first_release_date %}
+                                <span class="text-xs text-gray-500">{{ game.first_release_date|date:"Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-20">
+                <div class="text-6xl mb-4">👾</div>
+                <h2 class="text-2xl font-bold mb-2">Game Over</h2>
+                <p class="text-gray-500">No encontramos nada con ese nombre. Prueba otra vez.</p>
+            </div>
+        {% endif %}
+    </main>
+
+</body>
+</html>

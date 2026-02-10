@@ -1,0 +1,57 @@
+{% extends 'games/base.html' %}
+{% load static %}
+
+{% block title %}Próximos Lanzamientos - GameBox{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 pt-10">
+    
+    <div class="text-center mb-16">
+        <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-400">
+            EL FUTURO
+        </h1>
+        <p class="text-xl text-gray-400">Los juegos que llegarán próximamente.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {% for game in games %}
+        <div class="group relative bg-zinc-900 border border-white/5 rounded-3xl overflow-hidden hover:-translate-y-2 transition duration-300 shadow-2xl">
+            
+            <div class="relative aspect-[3/4] overflow-hidden">
+                <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700">
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+                
+                <div class="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3 text-center shadow-xl">
+                    <span class="block text-xs uppercase font-bold text-gray-300">Lanzamiento</span>
+                    <span class="block text-lg font-black text-white leading-none mt-1">
+                        {{ game.first_release_date|date:"d M" }}
+                    </span>
+                    <span class="block text-xs font-bold text-gray-400">
+                        {{ game.first_release_date|date:"Y" }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="absolute bottom-0 left-0 w-full p-6 translate-y-4 group-hover:translate-y-0 transition">
+                <h3 class="text-xl font-black leading-tight mb-2 text-white group-hover:text-teal-400 transition">{{ game.name }}</h3>
+                
+                <div class="flex flex-wrap gap-2 mb-4 opacity-0 group-hover:opacity-100 transition delay-100">
+                    {% for g in game.genres|slice:":2" %}
+                        <span class="text-[10px] font-bold bg-white/10 px-2 py-1 rounded uppercase">{{ g.name }}</span>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'detail' game.id %}" class="block w-full bg-white text-black text-center font-bold py-3 rounded-xl hover:bg-teal-400 transition shadow-lg opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 delay-150">
+                    Ver Detalles
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="py-20 text-center">
+        <p class="text-gray-500 text-sm">Fechas sujetas a cambios por las distribuidoras.</p>
+    </div>
+
+</div>
+{% endblock %}

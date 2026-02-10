@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GameBox{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;700;800&display=swap');
+        body { font-family: 'Manrope', sans-serif; background-color: #050505; color: white; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-indigo-500 selection:text-white pb-20">
+
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300 backdrop-blur-xl bg-black/50 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+            
+            <a href="{% url 'index' %}" class="text-2xl font-black tracking-tighter flex items-center gap-2 group shrink-0 hover:text-indigo-400 transition">
+                <span class="hidden sm:block">GAMEBOX</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-6">
+                <a href="{% url 'index' %}" class="text-gray-300 font-bold hover:text-white transition">Inicio</a>
+                <a href="{% url 'community' %}" class="text-gray-300 font-bold hover:text-white transition">Comunidad</a>
+                <a href="{% url 'releases' %}" class="text-gray-300 font-bold hover:text-white transition">Lanzamientos</a>
+            </div>
+
+            <form action="{% url 'search' %}" method="get" class="flex-1 max-w-sm relative group hidden md:block">
+                <input type="text" name="q" placeholder="Buscar juegos..." class="w-full bg-white/5 border border-white/10 rounded-full py-2 pl-4 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 transition text-white">
+            </form>
+
+            <div class="flex items-center gap-4 shrink-0">
+                {% if user.is_authenticated %}
+                    
+                    <a href="{% url 'notifications' %}" class="relative p-2 text-gray-400 hover:text-white transition mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                        {% if notif_count > 0 %}
+                            <span class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-black animate-bounce">
+                                {{ notif_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+
+                    <a href="{% url 'profile' %}" class="flex items-center gap-2 hover:bg-white/10 px-2 py-1.5 pr-3 rounded-full transition border border-transparent hover:border-white/10 group">
+                        <div class="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-white/10">
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ user.username|slice:":1" }}</div>
+                            {% endif %}
+                        </div>
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="px-5 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200">Entrar</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="pt-24">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

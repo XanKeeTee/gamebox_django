@@ -1,0 +1,94 @@
+{% extends 'games/base.html' %}
+{% block title %}Perfil de {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 md:px-6">
+    <div class="relative mb-32">
+        <div class="h-48 md:h-80 w-full rounded-3xl overflow-hidden relative border border-white/5">
+            {% if user.profile.banner %}<img src="{{ user.profile.banner.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-r from-purple-900 to-black"></div>{% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-90"></div>
+        </div>
+        <div class="absolute -bottom-20 left-6 md:left-12 flex items-end gap-6 w-full pr-6">
+            <div class="w-32 h-32 md:w-48 md:h-48 rounded-full border-[6px] border-[#050505] overflow-hidden bg-zinc-800 shadow-2xl relative z-10">
+                {% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full flex items-center justify-center text-5xl font-bold bg-indigo-600">{{ user.username|slice:":1" }}</div>{% endif %}
+            </div>
+            <div class="mb-2 md:mb-6 flex-1">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-3xl md:text-5xl font-black">{{ user.username }}</h1>
+                        <p class="text-gray-400 mt-1 font-medium">{{ user.profile.bio|default:"Jugador misterioso." }}</p>
+                    </div>
+                    <a href="{% url 'edit_profile' %}" class="text-xs font-bold px-4 py-2 border border-white/10 rounded-full hover:bg-white hover:text-black transition">Editar</a>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    {% for item in user.badges.all %}
+                    <div class="px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-1.5" title="{{ item.badge.description }}">
+                        <span class="text-xs">🏆</span><span class="text-[10px] font-bold text-gray-300 uppercase">{{ item.badge.name }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl text-center"><span class="text-3xl font-black">{{ total_count }}</span><br><span class="text-gray-500 text-[10px] font-bold">Total</span></div>
+        <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl text-center"><span class="text-3xl font-black text-pink-500">{{ fav_count }}</span><br><span class="text-gray-500 text-[10px] font-bold">Favoritos</span></div>
+        <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl text-center"><span class="text-3xl font-black text-green-500">{{ completed.count }}</span><br><span class="text-gray-500 text-[10px] font-bold">Completados</span></div>
+        <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl text-center"><span class="text-3xl font-black text-blue-500">{{ backlog.count }}</span><br><span class="text-gray-500 text-[10px] font-bold">Backlog</span></div>
+    </div>
+
+    {% if total_count > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        <div class="bg-zinc-900/30 border border-white/5 p-6 rounded-2xl">
+            <h3 class="font-bold text-gray-400 mb-4 text-xs uppercase tracking-widest">Distribución</h3>
+            <div class="h-64 relative"><canvas id="statusChart"></canvas></div>
+        </div>
+        <div class="bg-zinc-900/30 border border-white/5 p-6 rounded-2xl">
+            <h3 class="font-bold text-gray-400 mb-4 text-xs uppercase tracking-widest">Puntuaciones</h3>
+            <div class="h-64 relative"><canvas id="ratingsChart"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-16">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-purple-400">Mis Listas</h2>
+            <a href="{% url 'create_list' %}" class="text-xs font-bold bg-white/5 border border-white/10 px-3 py-1.5 rounded-full hover:bg-white hover:text-black transition">+ Nueva Lista</a>
+        </div>
+        {% if lists %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for lista in lists %}
+            <a href="{% url 'list_detail' lista.user.username lista.slug %}" class="bg-zinc-900/30 border border-white/5 rounded-2xl p-5 hover:bg-zinc-900/60 transition group">
+                <div class="flex justify-between mb-4"><h3 class="font-bold text-lg group-hover:text-purple-400 transition">{{ lista.name }}</h3><span class="text-xs font-bold bg-white/5 px-2 py-1 rounded text-gray-400">{{ lista.entries.count }} juegos</span></div>
+                <div class="flex -space-x-3 overflow-hidden h-24 items-center pl-2">
+                    {% for entry in lista.entries.all|slice:":4" %}<img src="https:{{ entry.game.cover_url }}" class="w-16 h-24 object-cover rounded-lg shadow-lg border border-zinc-900 relative">{% empty %}<span class="text-xs text-gray-600 pl-2">Vacía</span>{% endfor %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 border border-dashed border-white/10 rounded-2xl"><a href="{% url 'create_list' %}" class="text-indigo-400 font-bold text-sm">Crear mi primera lista</a></div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+        <div><h2 class="text-xl font-bold mb-6 text-blue-400">Backlog</h2><div class="grid grid-cols-3 sm:grid-cols-4 gap-4">{% for item in backlog %}<a href="{% url 'detail' item.game.igdb_id %}"><img src="https:{{ item.game.cover_url }}" class="w-full rounded-xl border border-white/5 opacity-80 hover:opacity-100 transition"></a>{% endfor %}</div></div>
+        <div><h2 class="text-xl font-bold mb-6 text-yellow-500">Completados</h2><div class="grid grid-cols-3 sm:grid-cols-4 gap-4">{% for item in completed %}<a href="{% url 'detail' item.game.igdb_id %}"><img src="https:{{ item.game.cover_url }}" class="w-full rounded-xl border border-white/5 grayscale hover:grayscale-0 transition"></a>{% endfor %}</div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if total_count > 0 %}
+<script>
+    Chart.defaults.color = '#9ca3af'; Chart.defaults.borderColor = '#27272a';
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut', data: { labels: ['Jugando', 'Completados', 'Backlog'], datasets: [{ data: [{{ status_data.playing }}, {{ status_data.completed }}, {{ status_data.backlog }}], backgroundColor: ['#22c55e', '#eab308', '#3b82f6'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6 } } } }
+    });
+    new Chart(document.getElementById('ratingsChart'), {
+        type: 'bar', data: { labels: ['1-20', '21-40', '41-60', '61-80', '81-100'], datasets: [{ data: {{ ratings_distribution }}, backgroundColor: '#6366f1', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#27272a', drawBorder: false } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+    });
+</script>
+{% endif %}
+{% endblock %}

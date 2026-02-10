@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Notificaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background-color: #050505; color: white; font-family: sans-serif; }</style>
+</head>
+<body class="min-h-screen pb-20">
+    
+    <nav class="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-xl border-b border-white/5 h-20 flex items-center px-6">
+        <a href="{% url 'index' %}" class="flex items-center gap-2 text-gray-400 hover:text-white font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Volver
+        </a>
+        <h1 class="mx-auto font-black text-xl tracking-tighter">NOTIFICACIONES</h1>
+        <div class="w-20"></div> </nav>
+
+    <div class="max-w-2xl mx-auto pt-32 px-4 space-y-4">
+        {% for n in notifs %}
+            <div class="flex items-center gap-4 p-4 rounded-2xl border transition
+                {% if n.is_seen %} bg-zinc-900/20 border-white/5 opacity-60 {% else %} bg-zinc-900 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.15)] {% endif %}">
+                
+                <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0
+                    {% if n.notification_type == 'follow' %} bg-pink-500/20 text-pink-500
+                    {% elif n.notification_type == 'comment' %} bg-blue-500/20 text-blue-500
+                    {% else %} bg-yellow-500/20 text-yellow-500 {% endif %}">
+                    
+                    {% if n.notification_type == 'follow' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    {% elif n.notification_type == 'comment' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    {% endif %}
+                </div>
+
+                <div class="flex-1">
+                    <p class="text-sm">
+                        <span class="font-bold text-white">{{ n.sender.username }}</span>
+                        {% if n.notification_type == 'follow' %}
+                            te ha empezado a seguir.
+                        {% elif n.notification_type == 'comment' %}
+                            comentó en tu reseña de <span class="text-indigo-400 font-bold">{{ n.text_preview }}</span>.
+                        {% endif %}
+                    </p>
+                    <span class="text-xs text-gray-500">{{ n.date|timesince }} ago</span>
+                </div>
+
+                {% if n.notification_type == 'follow' %}
+                    <a href="{% url 'public_profile' n.sender.username %}" class="px-4 py-2 bg-white/10 rounded-full text-xs font-bold hover:bg-white hover:text-black transition">Ver Perfil</a>
+                {% elif n.notification_type == 'comment' %}
+                    <a href="{% url 'detail' n.target_object_id %}" class="px-4 py-2 bg-white/10 rounded-full text-xs font-bold hover:bg-white hover:text-black transition">Ver Review</a>
+                {% endif %}
+            </div>
+        {% empty %}
+            <div class="text-center py-20 text-gray-500">
+                <p>No tienes notificaciones nuevas 😴</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

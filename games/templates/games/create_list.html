@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Lista</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background-color: #050505; color: white; font-family: sans-serif; }</style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+    <div class="max-w-lg w-full bg-zinc-900 border border-white/10 p-8 rounded-3xl">
+        <h2 class="text-3xl font-bold mb-6 text-center">Crear Nueva Lista</h2>
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-500 transition">Crear Lista</button>
+            <a href="{% url 'profile' %}" class="block text-center text-gray-500 mt-4 hover:text-white">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión - GameBox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { font-family: sans-serif; background-color: #050505; color: white; }</style>
+</head>
+<body class="min-h-screen flex items-center justify-center relative overflow-hidden">
+    
+    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
+
+    <div class="relative z-10 w-full max-w-md p-8 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black tracking-tighter mb-2">GAMEBOX</h1>
+            <p class="text-gray-400">Tu santuario de videojuegos</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
+                    Usuario o contraseña incorrectos.
+                </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-sm font-bold text-gray-400 mb-2">Usuario</label>
+                <input type="text" name="username" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 transition" required autofocus>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-400 mb-2">Contraseña</label>
+                <input type="password" name="password" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 transition" required>
+            </div>
+
+            <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition shadow-lg shadow-indigo-500/20">
+                Entrar
+            </button>
+        </form>
+
+        <div class="mt-8 text-center text-sm text-gray-500">
+            ¿No tienes cuenta? <a href="{% url 'register' %}" class="text-indigo-400 hover:text-white font-bold transition">Regístrate</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{% extends 'games/base.html' %}
+{% block title %}{{ game.name }} - GameBox{% endblock %}
+
+{% block content %}
+<div class="relative w-full min-h-[75vh] flex items-end pt-32">
+    <div class="absolute inset-0 z-0">
+        {% if game.screenshots %}<img src="https:{{ game.screenshots.0.url }}" class="w-full h-full object-cover opacity-50 blur-sm brightness-50">{% else %}<img src="https:{{ game.cover.url }}" class="w-full h-full object-cover opacity-30 blur-xl brightness-50">{% endif %}
+        <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent"></div>
+    </div>
+    <div class="relative z-10 w-full max-w-7xl mx-auto px-6 pb-12 flex flex-col md:flex-row gap-10 items-end">
+        <div class="hidden md:block w-72 shrink-0 perspective-1000">
+            <div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 rotate-y-6 hover:rotate-0 transition-all duration-700 ease-out group"><img src="https:{{ game.cover.url }}" class="w-full h-full object-cover"></div>
+        </div>
+        <div class="flex-1 space-y-6 mb-2">
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl">{{ game.name }}</h1>
+            <div class="flex flex-wrap gap-3 pt-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'add_to_library' game.id 'playing' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'playing' %} bg-green-600 border-green-500 text-white {% else %} bg-white/5 border-white/10 hover:bg-green-600 hover:border-green-500 hover:text-white backdrop-blur-md {% endif %}">▶ Jugando</a>
+                    <a href="{% url 'add_to_library' game.id 'completed' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'completed' %} bg-yellow-500 border-yellow-400 text-black {% else %} bg-white/5 border-white/10 hover:bg-yellow-500 hover:border-yellow-400 hover:text-black backdrop-blur-md {% endif %}">★ Completado</a>
+                    <a href="{% url 'add_to_library' game.id 'backlog' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'backlog' %} bg-blue-600 border-blue-500 text-white {% else %} bg-white/5 border-white/10 hover:bg-blue-600 hover:border-blue-500 hover:text-white backdrop-blur-md {% endif %}">⏱ Backlog</a>
+                    <a href="{% url 'add_to_list_view' game.id %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 bg-white/5 border-white/10 hover:bg-purple-600 hover:border-purple-500 hover:text-white backdrop-blur-md">✚ Lista</a>
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition">Inicia sesión</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 w-full">
+    <div class="lg:col-span-8 space-y-12">
+        <section><h3 class="text-2xl font-bold mb-6 border-l-4 border-indigo-500 pl-4">Sinopsis</h3><p class="text-lg text-gray-300 leading-relaxed font-light">{{ game.summary|default:"No hay descripción." }}</p></section>
+        
+        <section class="mt-12">
+            <h3 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="w-1 h-8 bg-purple-500 rounded-full"></span> Tu Diario</h3>
+            <div class="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+                {% if user.is_authenticated %}
+                    <form action="{% url 'update_review' game.id %}" method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <textarea name="review" rows="4" placeholder="Escribe tu reseña..." class="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none">{% if user_game %}{{ user_game.review|default:'' }}{% endif %}</textarea>
+                        <div class="flex flex-wrap justify-between items-center gap-4 pt-2">
+                            <div class="flex items-center gap-6">
+                                <div class="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5"><span class="text-xs font-bold text-gray-500">RATING</span><input type="number" name="rating" min="0" max="100" value="{{ user_game.rating|default:'' }}" class="w-12 bg-transparent text-center font-mono font-bold text-white focus:outline-none" placeholder="--"><span class="text-xs text-gray-600">/100</span></div>
+                                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" name="is_favorite" class="hidden peer" {% if user_game and user_game.is_favorite %}checked{% endif %}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600 peer-checked:text-pink-500 peer-checked:fill-pink-500 transition-all group-hover:scale-110"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg><span class="text-sm font-medium text-gray-500 peer-checked:text-pink-400 select-none">Favorito</span></label>
+                            </div>
+                            <button type="submit" class="px-6 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition">Guardar</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="text-gray-500 text-center py-4">Inicia sesión para escribir.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+    <div class="lg:col-span-4 space-y-6">
+        <div class="bg-zinc-900/30 p-8 rounded-3xl border border-white/5"><h4 class="text-gray-500 text-xs uppercase tracking-widest font-black mb-6">Info</h4><div class="flex flex-wrap gap-2">{% for genre in game.genres %}<span class="px-3 py-1.5 bg-indigo-900/20 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-bold">{{ genre.name }}</span>{% endfor %}</div></div>
+        {% if game.screenshots %}<div class="grid grid-cols-2 gap-2">{% for screen in game.screenshots|slice:":4" %}<img src="https:{{ screen.url }}" class="rounded-lg opacity-80 hover:opacity-100 transition">{% endfor %}</div>{% endif %}
+    </div>
+</div>
+
+<div class="w-full border-t border-white/5 bg-black/30 mt-auto">
+    <div class="max-w-7xl mx-auto px-6 py-12">
+        <h3 class="text-3xl font-black mb-8 flex items-center gap-3">Reseñas de la Comunidad <span class="text-gray-500 text-lg font-normal">({{ community_reviews.count }})</span></h3>
+        {% if community_reviews %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                {% for review in community_reviews %}
+                <div class="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 hover:bg-zinc-900/60 transition">
+                    <div class="flex justify-between items-start mb-4">
+                        <a href="{% url 'public_profile' review.user.username %}" class="flex items-center gap-3 group">
+                            <div class="w-10 h-10 rounded-full overflow-hidden border border-white/10">{% if review.user.profile.avatar %}<img src="{{ review.user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ review.user.username|slice:":1" }}</div>{% endif %}</div>
+                            <div><span class="block font-bold text-sm text-white group-hover:text-indigo-400 transition">{{ review.user.username }}</span></div>
+                        </a>
+                        {% if review.rating %}<div class="text-yellow-500 font-bold text-sm">★ {{ review.rating }}</div>{% endif %}
+                    </div>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-4">"{{ review.review }}"</p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="py-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/5"><p class="text-gray-400">Aún no hay reseñas.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

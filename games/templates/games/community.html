@@ -1,0 +1,120 @@
+{% extends 'games/base.html' %}
+{% block title %}Comunidad - GameBox{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 md:px-6 pt-10">
+    
+    <div class="mb-16">
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span class="text-yellow-500">🏆</span> Miembros Destacados
+        </h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {% for u in popular_users %}
+            <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center hover:bg-zinc-900 transition group relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+                
+                <a href="{% url 'public_profile' u.username %}" class="relative z-10">
+                    <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 mb-3 mx-auto group-hover:scale-110 transition duration-300">
+                        {% if u.profile.avatar %}
+                            <img src="{{ u.profile.avatar.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl font-bold">{{ u.username|slice:":1" }}</div>
+                        {% endif %}
+                    </div>
+                    <h3 class="font-bold text-white group-hover:text-indigo-400 transition">{{ u.username }}</h3>
+                    <p class="text-xs text-gray-500 font-bold mt-1">{{ u.profile.followed_by.count }} Seguidores</p>
+                </a>
+                
+                {% if user.is_authenticated and user != u %}
+                    <button onclick="toggleFollowFromCard(this, '{{ u.username }}')" class="mt-4 px-4 py-1.5 rounded-full text-xs font-bold border border-white/10 hover:bg-white hover:text-black transition w-full">Ver Perfil</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div class="lg:col-span-8">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span class="text-blue-400">🌍</span> Reseñas Recientes
+            </h2>
+
+            <div class="space-y-6">
+                {% for item in recent_reviews %}
+                <div class="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition">
+                    <div class="flex gap-4">
+                        <a href="{% url 'detail' item.game.igdb_id %}" class="shrink-0 w-20 h-28 rounded-xl overflow-hidden shadow-lg border border-white/5">
+                            <img src="https:{{ item.game.cover_url }}" class="w-full h-full object-cover">
+                        </a>
+                        
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold text-lg leading-tight">
+                                        <a href="{% url 'detail' item.game.igdb_id %}" class="hover:text-indigo-400 transition">{{ item.game.name }}</a>
+                                    </h3>
+                                    <div class="flex items-center gap-2 text-sm mt-1">
+                                        <span class="text-gray-500">por</span>
+                                        <a href="{% url 'public_profile' item.user.username %}" class="flex items-center gap-2 font-bold hover:text-white text-gray-300">
+                                            <div class="w-5 h-5 rounded-full overflow-hidden bg-zinc-800">
+                                                {% if item.user.profile.avatar %}
+                                                    <img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">
+                                                {% else %}
+                                                    <div class="w-full h-full bg-indigo-500"></div>
+                                                {% endif %}
+                                            </div>
+                                            {{ item.user.username }}
+                                        </a>
+                                    </div>
+                                </div>
+                                {% if item.rating %}
+                                    <div class="text-yellow-500 font-black text-xl">{{ item.rating }}</div>
+                                {% endif %}
+                            </div>
+
+                            <p class="text-gray-300 text-sm italic mb-4">"{{ item.review }}"</p>
+
+                            <div class="flex items-center gap-4 border-t border-white/5 pt-3">
+                                <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                    <span class="like-count">{{ item.total_likes }}</span> Likes
+                                </button>
+                                <span class="text-xs text-gray-600">{{ item.updated_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 space-y-6">
+            <div class="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-white/10 p-6 rounded-3xl text-center">
+                <h3 class="font-bold text-xl mb-2">¿Quieres aparecer aquí?</h3>
+                <p class="text-sm text-gray-400 mb-4">Escribe reseñas, consigue seguidores y sube en el ranking.</p>
+                <a href="{% url 'profile' %}" class="inline-block bg-white text-black px-6 py-2 rounded-full font-bold text-sm hover:scale-105 transition">Ir a mi Perfil</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Reutilizamos la función de Like del index
+    function toggleLike(btn, id) {
+        fetch(`/review/${id}/like/`).then(r => r.json()).then(data => {
+            btn.querySelector('.like-count').innerText = data.count;
+            const svg = btn.querySelector('svg');
+            if(data.liked) {
+                btn.classList.replace('text-gray-500', 'text-pink-500');
+                svg.setAttribute('fill', 'currentColor');
+            } else {
+                btn.classList.replace('text-pink-500', 'text-gray-500');
+                svg.setAttribute('fill', 'none');
+            }
+        });
+    }
+</script>
+{% endblock %}
