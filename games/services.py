@@ -55,21 +55,34 @@ class IGDBService:
 
     def get_game_detail(self, game_id):
         data = {
-            "fields": "name, cover.url, summary, first_release_date, total_rating, genres.name, platforms.name, screenshots.url, slug",
+            # AÑADIMOS: videos.name (antes solo teniamos videos.video_id)
+            "fields": "name, cover.url, summary, first_release_date, total_rating, genres.name, platforms.name, screenshots.url, slug, videos.video_id, videos.name, similar_games.name, similar_games.cover.url, similar_games.slug",
             "where": f"id = {game_id}",
             "limit": "1"
         }
+        
         response = requests.post(f"{self.base_url}/games", headers=self.headers, data=self._build_query(data))
+        
         if response.status_code == 200:
             results = response.json()
             if results:
                 game = results[0]
-                # Mejorar calidad de imágenes
+                
+                # Arreglar calidad portada principal
                 if 'cover' in game:
                     game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+                
+                # Arreglar calidad screenshots
                 if 'screenshots' in game:
                     for screen in game['screenshots']:
                         screen['url'] = screen['url'].replace('t_thumb', 't_screenshot_big')
+
+                # NUEVO: Arreglar calidad portadas de juegos similares
+                if 'similar_games' in game:
+                    for sim in game['similar_games']:
+                        if 'cover' in sim:
+                            sim['cover']['url'] = sim['cover']['url'].replace('t_thumb', 't_cover_big')
+
                 return game
         return None
 

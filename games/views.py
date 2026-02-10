@@ -14,35 +14,35 @@ from django.http import HttpResponseNotFound, JsonResponse
 
 def index(request):
     service = IGDBService()
-
-    # 1. Cargar juegos Trending (Como siempre)
+    
+    # 1. Trending (Top Games)
     trending_games = service.get_top_games()
-    # (Limpieza de imágenes de trending...)
     for game in trending_games:
-        if "cover" in game:
-            game["cover"]["url"] = game["cover"]["url"].replace(
-                "t_thumb", "t_cover_big"
-            )
+        if 'cover' in game:
+            game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 2. Cargar FEED SOCIAL (Solo si estás logueado)
+    # 2. Upcoming (Para el carrusel, pedimos solo 5 o 6)
+    upcoming_games = service.get_upcoming_games()[:10] # Cogemos los 10 primeros
+    for game in upcoming_games:
+        if 'cover' in game:
+            game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+
+    # 3. Feed Social (Igual que antes)
     feed_items = []
     if request.user.is_authenticated:
-        # Obtener IDs de la gente a la que sigues
-        following_ids = request.user.profile.follows.values_list("user__id", flat=True)
+        following_ids = request.user.profile.follows.values_list('user__id', flat=True)
+        feed_items = UserGame.objects.filter(user__id__in=following_ids) \
+            .exclude(status='backlog') \
+            .select_related('user__profile', 'game') \
+            .prefetch_related('comments__user__profile', 'likes') \
+            .order_by('-updated_at')[:20]
 
-        # Traer sus actividades (UserGame) más recientes
-        # select_related optimiza la carga de datos
-        feed_items = (
-            UserGame.objects.filter(user__id__in=following_ids)
-            .exclude(status="backlog")
-            .select_related("user__profile", "game")
-            .prefetch_related("comments__user__profile", "likes")
-            .order_by("-updated_at")[:20]
-        )  # Limitamos a 20 posts
-
-    return render(
-        request, "games/index.html", {"games": trending_games, "feed_items": feed_items}
-    )
+    return render(request, 'games/index.html', {
+        'hero_game': trending_games[0] if trending_games else None, # El juego #1 para el banner gigante
+        'trending_games': trending_games[1:], # El resto para la lista lateral
+        'upcoming': upcoming_games,
+        'feed_items': feed_items
+    })
 
 
 def detail(request, game_id):

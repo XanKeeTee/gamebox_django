@@ -2,78 +2,166 @@
 {% block title %}Inicio - GameBox{% endblock %}
 
 {% block content %}
-<main class="pb-20 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
-    
-    <div class="lg:col-span-7 space-y-8">
-        {% if user.is_authenticated %}
-            <h2 class="text-2xl font-bold flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Actividad de Amigos</h2>
-            {% if feed_items %}
-                {% for item in feed_items %}
-                <div class="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition group">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <a href="{% url 'public_profile' item.user.username %}" class="w-10 h-10 rounded-full overflow-hidden border border-white/10">
-                                {% if item.user.profile.avatar %}<img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ item.user.username|slice:":1" }}</div>{% endif %}
-                            </a>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <a href="{% url 'public_profile' item.user.username %}" class="font-bold hover:text-indigo-400 transition">{{ item.user.username }}</a>
-                                    <span class="text-gray-500 text-sm">{% if item.status == 'completed' %} completó {% elif item.status == 'playing' %} empezó {% else %} actualizó {% endif %}</span>
-                                </div>
-                                <span class="text-xs text-gray-600">{{ item.updated_at|timesince }} ago</span>
-                            </div>
-                        </div>
-                        {% if item.rating %}<div class="flex gap-0.5 text-yellow-500 text-xs"><span class="font-bold text-lg leading-none">{{ item.rating }}</span><span class="text-[10px] text-gray-500 mt-1">/100</span></div>{% endif %}
-                    </div>
-                    <div class="flex gap-4">
-                        <a href="{% url 'detail' item.game.igdb_id %}" class="shrink-0 w-24 h-32 rounded-xl overflow-hidden shadow-lg border border-white/5 hover:scale-105 transition duration-500"><img src="https:{{ item.game.cover_url }}" class="w-full h-full object-cover"></a>
-                        <div class="flex-1">
-                            <a href="{% url 'detail' item.game.igdb_id %}" class="text-xl font-black leading-tight hover:text-indigo-400 transition">{{ item.game.name }}</a>
-                            {% if item.review %}<div class="mt-3 text-gray-300 text-sm italic bg-black/20 p-3 rounded-xl border-l-2 border-indigo-500">"{{ item.review }}"</div>{% endif %}
-                            
-                            <div class="flex items-center gap-4 mt-4 pt-4 border-t border-white/5">
-                                <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-sm transition group/like {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300 group-active/like:scale-125"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
-                                    <span class="font-bold like-count">{{ item.total_likes }}</span>
-                                </button>
-                                <button class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-400 transition" onclick="document.getElementById('comment-box-{{ item.id }}').classList.toggle('hidden')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                                    <span class="font-bold">{{ item.comments.count }}</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="comment-box-{{ item.id }}" class="hidden mt-4 pt-4 bg-black/20 rounded-xl p-4">
-                        {% if item.comments.all %}
-                            <div class="space-y-3 mb-4 max-h-40 overflow-y-auto no-scrollbar">
-                                {% for comment in item.comments.all %}
-                                    <div class="flex gap-2 text-sm"><span class="font-bold text-white shrink-0">{{ comment.user.username }}:</span><span class="text-gray-400">{{ comment.text }}</span></div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <form action="{% url 'add_comment' item.id %}" method="post" class="flex gap-2">{% csrf_token %}<input type="text" name="text" placeholder="Escribe algo..." class="flex-1 bg-zinc-900 border border-white/10 rounded-full px-4 py-2 text-xs focus:outline-none focus:border-indigo-500 text-white" required><button type="submit" class="text-indigo-400 font-bold text-xs hover:text-white transition">Publicar</button></form>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div class="bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl p-10 text-center"><h3 class="text-xl font-bold text-white mb-2">Tu feed está vacío</h3><p class="text-gray-500 mb-6">Sigue a otros usuarios para ver qué están jugando.</p><a href="{% url 'community' %}" class="inline-block bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition">Explorar Comunidad</a></div>
-            {% endif %}
-        {% else %}
-            <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-3xl p-10 text-center h-full flex flex-col justify-center items-center"><h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-4">Únete a GameBox</h1><p class="text-gray-300 text-lg mb-8 max-w-md">Lleva el registro de tus juegos y comparte tu pasión.</p><a href="{% url 'register' %}" class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-gray-200 transition shadow-lg">Empezar ahora</a></div>
-        {% endif %}
+
+{% if hero_game %}
+<div class="relative w-full h-[500px] flex items-end mb-12 group overflow-hidden">
+    <div class="absolute inset-0">
+        <img src="https:{{ hero_game.cover.url }}" class="w-full h-full object-cover opacity-40 blur-sm scale-105 group-hover:scale-100 transition duration-1000">
+        <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent"></div>
     </div>
 
-    <div class="lg:col-span-5">
-        <h2 class="text-xl font-bold mb-6 text-gray-400 uppercase tracking-widest text-xs">Tendencias Globales</h2>
-        <div class="space-y-4">
-            {% for game in games|slice:":10" %}
-            <a href="{% url 'detail' game.id %}" class="flex items-center gap-4 group p-2 rounded-xl hover:bg-white/5 transition">
-                <div class="w-16 h-20 rounded-lg overflow-hidden bg-zinc-800 shadow-md">{% if game.cover %}<img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">{% endif %}</div>
-                <div class="flex-1"><h3 class="font-bold text-white group-hover:text-indigo-400 transition line-clamp-1">{{ game.name }}</h3>{% if game.total_rating %}<span class="text-xs font-bold text-green-500">{{ game.total_rating|floatformat:0 }}% Rating</span>{% endif %}</div>
-            </a>
-            {% endfor %}
+    <div class="relative z-10 max-w-7xl mx-auto px-6 w-full pb-12 flex items-end gap-8">
+        <img src="https:{{ hero_game.cover.url }}" class="hidden md:block w-48 rounded-xl shadow-2xl border border-white/10 rotate-3 group-hover:rotate-0 transition duration-500">
+        <div class="mb-4">
+            <span class="bg-yellow-500 text-black text-xs font-black px-3 py-1 rounded uppercase tracking-widest mb-2 inline-block">Trending #1</span>
+            <h1 class="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-4 drop-shadow-xl">{{ hero_game.name }}</h1>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'detail' hero_game.id %}" class="bg-white text-black px-8 py-3 rounded-full font-bold hover:bg-indigo-500 hover:text-white transition shadow-lg flex items-center gap-2">
+                    Ver Detalles <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </a>
+                {% if hero_game.total_rating %}
+                    <div class="flex flex-col">
+                        <span class="text-3xl font-black text-green-400 leading-none">{{ hero_game.total_rating|floatformat:0 }}</span>
+                        <span class="text-[10px] text-gray-400 uppercase font-bold">Rating</span>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
+</div>
+{% endif %}
+
+<main class="pb-20 px-4 md:px-8 max-w-7xl mx-auto">
+
+    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-8 mb-4">
+        <a href="{% url 'search' %}?q=RPG" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">⚔️ RPG</a>
+        <a href="{% url 'search' %}?q=Shooter" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">🎯 Shooter</a>
+        <a href="{% url 'search' %}?q=Adventure" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">🏔️ Aventura</a>
+        <a href="{% url 'search' %}?q=Indie" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">🎨 Indie</a>
+        <a href="{% url 'search' %}?q=Strategy" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">🧠 Estrategia</a>
+        <a href="{% url 'search' %}?q=Sport" class="whitespace-nowrap px-6 py-2 rounded-full bg-zinc-900 border border-white/10 text-sm font-bold text-gray-300 hover:bg-white hover:text-black transition">⚽ Deportes</a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <div class="lg:col-span-8 space-y-10">
+            
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold flex items-center gap-2">🚀 Próximamente</h2>
+                    <a href="{% url 'releases' %}" class="text-xs font-bold text-indigo-400 hover:text-white transition">Ver calendario completo →</a>
+                </div>
+                <div class="flex gap-4 overflow-x-auto pb-4 snap-x">
+                    {% for game in upcoming %}
+                    <a href="{% url 'detail' game.id %}" class="snap-start shrink-0 w-36 group">
+                        <div class="aspect-[3/4] rounded-xl overflow-hidden mb-2 relative">
+                            <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                            <div class="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur text-center py-1">
+                                <span class="text-[10px] font-bold text-white">{{ game.first_release_date|date:"d M" }}</span>
+                            </div>
+                        </div>
+                        <h3 class="font-bold text-sm text-gray-300 truncate group-hover:text-white">{{ game.name }}</h3>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-bold flex items-center gap-2 mb-6">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Tu Feed
+                </h2>
+
+                {% if user.is_authenticated %}
+                    {% if feed_items %}
+                        <div class="space-y-6">
+                            {% for item in feed_items %}
+                            <div class="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex items-center gap-3">
+                                        <a href="{% url 'public_profile' item.user.username %}" class="w-10 h-10 rounded-full overflow-hidden border border-white/10">
+                                            {% if item.user.profile.avatar %}<img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ item.user.username|slice:":1" }}</div>{% endif %}
+                                        </a>
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <a href="{% url 'public_profile' item.user.username %}" class="font-bold hover:text-indigo-400 transition">{{ item.user.username }}</a>
+                                                <span class="text-gray-500 text-sm">{% if item.status == 'completed' %} completó {% elif item.status == 'playing' %} empezó {% else %} actualizó {% endif %}</span>
+                                            </div>
+                                            <span class="text-xs text-gray-600">{{ item.updated_at|timesince }} ago</span>
+                                        </div>
+                                    </div>
+                                    {% if item.rating %}<div class="text-yellow-500 font-bold text-lg">{{ item.rating }}<span class="text-xs text-gray-500">/100</span></div>{% endif %}
+                                </div>
+                                
+                                <div class="flex gap-4">
+                                    <a href="{% url 'detail' item.game.igdb_id %}" class="shrink-0 w-20 h-28 rounded-lg overflow-hidden shadow-lg border border-white/5 hover:scale-105 transition"><img src="https:{{ item.game.cover_url }}" class="w-full h-full object-cover"></a>
+                                    <div class="flex-1">
+                                        <a href="{% url 'detail' item.game.igdb_id %}" class="text-lg font-black leading-tight hover:text-indigo-400 transition block mb-2">{{ item.game.name }}</a>
+                                        {% if item.review %}<p class="text-gray-300 text-sm italic border-l-2 border-indigo-500 pl-3">"{{ item.review }}"</p>{% endif %}
+                                        
+                                        <div class="flex items-center gap-6 mt-4 pt-3 border-t border-white/5">
+                                            <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                                <span class="like-count">{{ item.total_likes }}</span>
+                                            </button>
+                                            <button class="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-400 transition" onclick="document.getElementById('comment-box-{{ item.id }}').classList.toggle('hidden')">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                                <span>{{ item.comments.count }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="comment-box-{{ item.id }}" class="hidden mt-4 pt-4 bg-black/20 rounded-xl p-4">
+                                    {% if item.comments.all %}
+                                        <div class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar">
+                                            {% for comment in item.comments.all %}<div class="text-xs"><span class="font-bold text-white">{{ comment.user.username }}:</span> <span class="text-gray-400">{{ comment.text }}</span></div>{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <form action="{% url 'add_comment' item.id %}" method="post" class="flex gap-2">{% csrf_token %}<input type="text" name="text" placeholder="Comenta..." class="flex-1 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" required><button type="submit" class="text-indigo-400 font-bold text-xs">Enviar</button></form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl p-10 text-center">
+                            <h3 class="text-xl font-bold text-white mb-2">Tu feed está vacío</h3>
+                            <p class="text-gray-500 mb-6">Sigue a otros usuarios para ver actividad aquí.</p>
+                            <a href="{% url 'community' %}" class="inline-block bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200 transition">Explorar</a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-white/10 rounded-3xl p-10 text-center">
+                        <h1 class="text-3xl font-black mb-4">Bienvenido a GameBox</h1>
+                        <p class="text-gray-300 mb-6">Regístrate para crear tu biblioteca y seguir amigos.</p>
+                        <a href="{% url 'register' %}" class="bg-white text-black px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition">Crear cuenta</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="lg:col-span-4">
+            <h2 class="text-xl font-bold mb-6 text-gray-400 uppercase tracking-widest text-xs">🔥 Top Tendencias</h2>
+            <div class="space-y-3">
+                {% for game in trending_games|slice:":8" %}
+                <a href="{% url 'detail' game.id %}" class="flex items-center gap-3 group p-2 rounded-xl hover:bg-white/5 transition">
+                    <span class="text-2xl font-black text-gray-700 w-6 text-center group-hover:text-indigo-500 transition">{{ forloop.counter|add:"1" }}</span>
+                    <div class="w-12 h-16 rounded overflow-hidden bg-zinc-800">{% if game.cover %}<img src="https:{{ game.cover.url }}" class="w-full h-full object-cover">{% endif %}</div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-sm text-white group-hover:text-indigo-400 transition line-clamp-1">{{ game.name }}</h3>
+                        {% if game.total_rating %}<span class="text-[10px] font-bold text-green-500">{{ game.total_rating|floatformat:0 }}%</span>{% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-8 bg-gradient-to-br from-pink-900/20 to-purple-900/20 border border-white/5 p-6 rounded-2xl text-center">
+                <h3 class="font-bold text-white mb-2">¿Buscas inspiración?</h3>
+                <p class="text-xs text-gray-400 mb-4">Mira lo que está jugando la comunidad ahora mismo.</p>
+                <a href="{% url 'community' %}" class="block w-full border border-white/20 rounded-lg py-2 text-xs font-bold hover:bg-white hover:text-black transition">Ir a Comunidad</a>
+            </div>
+        </div>
+    </div>
+
 </main>
 {% endblock %}
 

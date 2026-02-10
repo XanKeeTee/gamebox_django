@@ -2,25 +2,50 @@
 {% block title %}{{ game.name }} - GameBox{% endblock %}
 
 {% block content %}
-<div class="relative w-full min-h-[75vh] flex items-end pt-32">
-    <div class="absolute inset-0 z-0">
-        {% if game.screenshots %}<img src="https:{{ game.screenshots.0.url }}" class="w-full h-full object-cover opacity-50 blur-sm brightness-50">{% else %}<img src="https:{{ game.cover.url }}" class="w-full h-full object-cover opacity-30 blur-xl brightness-50">{% endif %}
+<div class="relative w-full min-h-[80vh] flex items-end pt-32 group">
+    <div class="absolute inset-0 z-0 overflow-hidden">
+        {% if game.screenshots %}
+            <img src="https:{{ game.screenshots.0.url }}" class="w-full h-full object-cover opacity-40 blur-sm brightness-50 scale-105 group-hover:scale-100 transition duration-[2000ms]">
+        {% else %}
+            <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover opacity-30 blur-xl brightness-50">
+        {% endif %}
         <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-[#050505]/90 via-transparent to-transparent"></div>
     </div>
+
     <div class="relative z-10 w-full max-w-7xl mx-auto px-6 pb-12 flex flex-col md:flex-row gap-10 items-end">
         <div class="hidden md:block w-72 shrink-0 perspective-1000">
-            <div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 rotate-y-6 hover:rotate-0 transition-all duration-700 ease-out group"><img src="https:{{ game.cover.url }}" class="w-full h-full object-cover"></div>
+            <div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 rotate-y-6 hover:rotate-0 transition-all duration-700 ease-out group/card">
+                <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/card:opacity-100 transition"></div>
+            </div>
         </div>
+
         <div class="flex-1 space-y-6 mb-2">
+            <div class="flex flex-wrap gap-2">
+                {% for genre in game.genres %}
+                    <span class="px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg text-[10px] font-bold uppercase tracking-wider text-white border border-white/10">{{ genre.name }}</span>
+                {% endfor %}
+            </div>
+
             <h1 class="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-white drop-shadow-2xl">{{ game.name }}</h1>
+            
             <div class="flex flex-wrap gap-3 pt-4">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'add_to_library' game.id 'playing' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'playing' %} bg-green-600 border-green-500 text-white {% else %} bg-white/5 border-white/10 hover:bg-green-600 hover:border-green-500 hover:text-white backdrop-blur-md {% endif %}">▶ Jugando</a>
-                    <a href="{% url 'add_to_library' game.id 'completed' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'completed' %} bg-yellow-500 border-yellow-400 text-black {% else %} bg-white/5 border-white/10 hover:bg-yellow-500 hover:border-yellow-400 hover:text-black backdrop-blur-md {% endif %}">★ Completado</a>
-                    <a href="{% url 'add_to_library' game.id 'backlog' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'backlog' %} bg-blue-600 border-blue-500 text-white {% else %} bg-white/5 border-white/10 hover:bg-blue-600 hover:border-blue-500 hover:text-white backdrop-blur-md {% endif %}">⏱ Backlog</a>
-                    <a href="{% url 'add_to_list_view' game.id %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 bg-white/5 border-white/10 hover:bg-purple-600 hover:border-purple-500 hover:text-white backdrop-blur-md">✚ Lista</a>
+                    <a href="{% url 'add_to_library' game.id 'playing' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'playing' %} bg-green-600 border-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] {% else %} bg-white/5 border-white/10 hover:bg-green-600 hover:border-green-500 hover:text-white backdrop-blur-md {% endif %}">
+                        <span class="text-lg">▶</span> Jugando
+                    </a>
+                    <a href="{% url 'add_to_library' game.id 'completed' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'completed' %} bg-yellow-500 border-yellow-400 text-black shadow-[0_0_20px_rgba(234,179,8,0.4)] {% else %} bg-white/5 border-white/10 hover:bg-yellow-500 hover:border-yellow-400 hover:text-black backdrop-blur-md {% endif %}">
+                        <span class="text-lg">★</span> Completado
+                    </a>
+                    <a href="{% url 'add_to_library' game.id 'backlog' %}" class="px-6 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 {% if user_game_status == 'backlog' %} bg-blue-600 border-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] {% else %} bg-white/5 border-white/10 hover:bg-blue-600 hover:border-blue-500 hover:text-white backdrop-blur-md {% endif %}">
+                        <span class="text-lg">⏱</span> Backlog
+                    </a>
+                    <a href="{% url 'add_to_list_view' game.id %}" class="px-4 py-3 rounded-xl font-bold text-sm transition-all border flex items-center gap-2 bg-white/5 border-white/10 hover:bg-purple-600 hover:border-purple-500 hover:text-white backdrop-blur-md" title="Añadir a lista">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+                    </a>
                 {% else %}
-                    <a href="{% url 'login' %}?next={{ request.path }}" class="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition">Inicia sesión</a>
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition shadow-lg">Inicia sesión para guardar</a>
                 {% endif %}
             </div>
         </div>
@@ -28,57 +53,136 @@
 </div>
 
 <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-12 w-full">
+    
     <div class="lg:col-span-8 space-y-12">
-        <section><h3 class="text-2xl font-bold mb-6 border-l-4 border-indigo-500 pl-4">Sinopsis</h3><p class="text-lg text-gray-300 leading-relaxed font-light">{{ game.summary|default:"No hay descripción." }}</p></section>
+        
+        <section>
+            <h3 class="text-2xl font-bold mb-6 border-l-4 border-indigo-500 pl-4">Sinopsis</h3>
+            <p class="text-lg text-gray-300 leading-relaxed font-light text-justify">{{ game.summary|default:"No hay descripción disponible." }}</p>
+        </section>
+
+        {% if game.videos %}
+        <section>
+            <h3 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="text-red-500">🎬</span> Galería de Vídeos</h3>
+            
+            <div class="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black relative group">
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/{{ game.videos.0.video_id }}?rel=0&modestbranding=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-4 mt-4 bg-zinc-900/50 p-4 rounded-xl border border-white/5">
+                <div class="text-sm text-gray-400">
+                    <span class="font-bold text-white">Video actual:</span> {{ game.videos.0.name }}
+                </div>
+                <a href="https://www.youtube.com/watch?v={{ game.videos.0.video_id }}" target="_blank" class="flex items-center gap-2 text-xs font-bold bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Abrir en YouTube (Si da error)
+                </a>
+            </div>
+
+            {% if game.videos|length > 1 %}
+            <div class="mt-6">
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Más vídeos</h4>
+                <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                    {% for video in game.videos|slice:"1:" %}
+                    <div class="shrink-0 w-48 group cursor-pointer">
+                        <div class="aspect-video rounded-lg overflow-hidden border border-white/10 relative mb-2">
+                            <img src="https://img.youtube.com/vi/{{ video.video_id }}//mqdefault.jpg" class="w-full h-full object-cover group-hover:scale-110 transition">
+                            <a href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank" class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            </a>
+                        </div>
+                        <span class="text-xs font-bold text-gray-400 group-hover:text-white line-clamp-1">{{ video.name }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
         
         <section class="mt-12">
             <h3 class="text-2xl font-bold mb-6 flex items-center gap-3"><span class="w-1 h-8 bg-purple-500 rounded-full"></span> Tu Diario</h3>
-            <div class="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
+            <div class="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10"><svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="currentColor" class="text-white"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
                 {% if user.is_authenticated %}
-                    <form action="{% url 'update_review' game.id %}" method="post" class="space-y-4">
+                    <form action="{% url 'update_review' game.id %}" method="post" class="space-y-4 relative z-10">
                         {% csrf_token %}
-                        <textarea name="review" rows="4" placeholder="Escribe tu reseña..." class="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition resize-none">{% if user_game %}{{ user_game.review|default:'' }}{% endif %}</textarea>
+                        <textarea name="review" rows="4" placeholder="¿Qué te pareció este juego? Escribe tu reseña..." class="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition resize-none">{% if user_game %}{{ user_game.review|default:'' }}{% endif %}</textarea>
                         <div class="flex flex-wrap justify-between items-center gap-4 pt-2">
                             <div class="flex items-center gap-6">
-                                <div class="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5"><span class="text-xs font-bold text-gray-500">RATING</span><input type="number" name="rating" min="0" max="100" value="{{ user_game.rating|default:'' }}" class="w-12 bg-transparent text-center font-mono font-bold text-white focus:outline-none" placeholder="--"><span class="text-xs text-gray-600">/100</span></div>
+                                <div class="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5"><span class="text-xs font-bold text-gray-500">NOTA</span><input type="number" name="rating" min="0" max="100" value="{{ user_game.rating|default:'' }}" class="w-12 bg-transparent text-center font-mono font-bold text-white focus:outline-none" placeholder="--"><span class="text-xs text-gray-600">/100</span></div>
                                 <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" name="is_favorite" class="hidden peer" {% if user_game and user_game.is_favorite %}checked{% endif %}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-600 peer-checked:text-pink-500 peer-checked:fill-pink-500 transition-all group-hover:scale-110"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg><span class="text-sm font-medium text-gray-500 peer-checked:text-pink-400 select-none">Favorito</span></label>
                             </div>
-                            <button type="submit" class="px-6 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition">Guardar</button>
+                            <button type="submit" class="px-6 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition shadow-lg">Guardar Reseña</button>
                         </div>
                     </form>
                 {% else %}
-                    <p class="text-gray-500 text-center py-4">Inicia sesión para escribir.</p>
+                    <p class="text-gray-500 text-center py-4">Inicia sesión para escribir tu reseña.</p>
                 {% endif %}
             </div>
         </section>
-    </div>
-    <div class="lg:col-span-4 space-y-6">
-        <div class="bg-zinc-900/30 p-8 rounded-3xl border border-white/5"><h4 class="text-gray-500 text-xs uppercase tracking-widest font-black mb-6">Info</h4><div class="flex flex-wrap gap-2">{% for genre in game.genres %}<span class="px-3 py-1.5 bg-indigo-900/20 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-bold">{{ genre.name }}</span>{% endfor %}</div></div>
-        {% if game.screenshots %}<div class="grid grid-cols-2 gap-2">{% for screen in game.screenshots|slice:":4" %}<img src="https:{{ screen.url }}" class="rounded-lg opacity-80 hover:opacity-100 transition">{% endfor %}</div>{% endif %}
-    </div>
-</div>
 
-<div class="w-full border-t border-white/5 bg-black/30 mt-auto">
-    <div class="max-w-7xl mx-auto px-6 py-12">
-        <h3 class="text-3xl font-black mb-8 flex items-center gap-3">Reseñas de la Comunidad <span class="text-gray-500 text-lg font-normal">({{ community_reviews.count }})</span></h3>
-        {% if community_reviews %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {% for review in community_reviews %}
-                <div class="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 hover:bg-zinc-900/60 transition">
-                    <div class="flex justify-between items-start mb-4">
-                        <a href="{% url 'public_profile' review.user.username %}" class="flex items-center gap-3 group">
-                            <div class="w-10 h-10 rounded-full overflow-hidden border border-white/10">{% if review.user.profile.avatar %}<img src="{{ review.user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ review.user.username|slice:":1" }}</div>{% endif %}</div>
-                            <div><span class="block font-bold text-sm text-white group-hover:text-indigo-400 transition">{{ review.user.username }}</span></div>
-                        </a>
-                        {% if review.rating %}<div class="text-yellow-500 font-bold text-sm">★ {{ review.rating }}</div>{% endif %}
+        <section>
+            <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">Comunidad <span class="text-gray-500 text-lg font-normal">({{ community_reviews.count }})</span></h3>
+            {% if community_reviews %}
+                <div class="grid grid-cols-1 gap-4">
+                    {% for review in community_reviews %}
+                    <div class="bg-zinc-900/30 border border-white/5 rounded-2xl p-6 hover:bg-zinc-900/50 transition">
+                        <div class="flex justify-between items-start mb-3">
+                            <a href="{% url 'public_profile' review.user.username %}" class="flex items-center gap-3 group">
+                                <div class="w-10 h-10 rounded-full overflow-hidden border border-white/10">{% if review.user.profile.avatar %}<img src="{{ review.user.profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ review.user.username|slice:":1" }}</div>{% endif %}</div>
+                                <div><span class="block font-bold text-sm text-white group-hover:text-indigo-400 transition">{{ review.user.username }}</span><span class="text-xs text-gray-600">{{ review.updated_at|timesince }} ago</span></div>
+                            </a>
+                            {% if review.rating %}<div class="text-yellow-500 font-bold text-xl">{{ review.rating }}</div>{% endif %}
+                        </div>
+                        <p class="text-gray-300 text-sm italic">"{{ review.review }}"</p>
                     </div>
-                    <p class="text-gray-300 text-sm leading-relaxed mb-4">"{{ review.review }}"</p>
+                    {% endfor %}
                 </div>
+            {% else %}
+                <div class="py-8 text-center border border-dashed border-white/10 rounded-2xl bg-white/5"><p class="text-gray-400 text-sm">Sé el primero en opinar.</p></div>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="lg:col-span-4 space-y-10">
+        <div class="bg-zinc-900/30 p-6 rounded-3xl border border-white/5">
+            <h4 class="text-gray-500 text-xs uppercase tracking-widest font-black mb-4">Información</h4>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-gray-400">Lanzamiento</span><span class="font-bold">{{ game.first_release_date|date:"d M Y" }}</span></div>
+                <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-gray-400">Rating IGDB</span><span class="font-bold text-green-400">{{ game.total_rating|floatformat:0 }}%</span></div>
+                <div class="pt-2"><span class="block text-gray-400 mb-2">Plataformas</span><div class="flex flex-wrap gap-2">{% for p in game.platforms %}<span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-300">{{ p.name }}</span>{% endfor %}</div></div>
+            </div>
+        </div>
+
+        {% if game.similar_games %}
+        <div>
+            <h4 class="text-gray-500 text-xs uppercase tracking-widest font-black mb-4">Quizás te guste...</h4>
+            <div class="grid grid-cols-2 gap-3">
+                {% for sim in game.similar_games|slice:":6" %}
+                <a href="{% url 'detail' sim.id %}" class="group relative aspect-[3/4] block rounded-xl overflow-hidden bg-zinc-800">
+                    {% if sim.cover %}
+                        <img src="https:{{ sim.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                    {% endif %}
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-2 text-center">
+                        <span class="text-xs font-bold text-white">{{ sim.name }}</span>
+                    </div>
+                </a>
                 {% endfor %}
             </div>
-        {% else %}
-            <div class="py-12 text-center border border-dashed border-white/10 rounded-2xl bg-white/5"><p class="text-gray-400">Aún no hay reseñas.</p></div>
+        </div>
+        {% endif %}
+
+        {% if game.screenshots %}
+        <div>
+            <h4 class="text-gray-500 text-xs uppercase tracking-widest font-black mb-4">Galería</h4>
+            <div class="grid grid-cols-2 gap-2">
+                {% for screen in game.screenshots|slice:":4" %}
+                    <img src="https:{{ screen.url }}" class="rounded-lg opacity-80 hover:opacity-100 transition cursor-pointer hover:scale-105 duration-300 border border-white/5">
+                {% endfor %}
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
+{% endblock %} ```
