@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings  # <--- Importar
+from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("games.urls")),  # Redirige la raíz a tu app 'games'
+    path("", include("games.urls")),
 ]
 
 if settings.DEBUG:

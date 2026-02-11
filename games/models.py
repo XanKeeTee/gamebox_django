@@ -19,7 +19,7 @@ class UserGame(models.Model):
         ("playing", "Jugando"),
         ("completed", "Completado"),
         ("backlog", "Pendiente"),
-        ("dropped", "Abandonado"),  # Añadimos este por si acaso
+        ("dropped", "Abandonado"),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
@@ -29,8 +29,6 @@ class UserGame(models.Model):
     is_favorite = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # --- NUEVO: LIKES ---
-    # Guardamos QUÉ usuarios le han dado like a esta entrada
     likes = models.ManyToManyField(User, related_name="liked_reviews", blank=True)
 
     def total_likes(self):
@@ -47,8 +45,6 @@ class Profile(models.Model):
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
     banner = models.ImageField(upload_to="banners/", null=True, blank=True)
 
-    # --- NUEVO CAMPO: SEGUIDORES ---
-    # "symmetrical=False" significa que si yo te sigo, tú no tienes por qué seguirme a mí (como Twitter/Instagram)
     follows = models.ManyToManyField(
         "self", related_name="followed_by", symmetrical=False, blank=True
     )
@@ -82,14 +78,12 @@ class GameList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lists")
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    slug = models.SlugField(blank=True)  # Para la URL bonita
+    slug = models.SlugField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Imagen de portada de la lista (opcional, si no usaremos la del primer juego)
     likes = models.ManyToManyField(User, related_name="liked_lists", blank=True)
 
     def save(self, *args, **kwargs):
-        # Auto-generar slug si no existe (ej: "Mi Lista" -> "mi-lista")
         if not self.slug:
             from django.utils.text import slugify
 
@@ -114,20 +108,20 @@ class ListEntry(models.Model):
     order = models.PositiveIntegerField(default=0)
     comment = models.TextField(
         blank=True, null=True
-    )  # Comentario específico para este juego en la lista
+    )
 
     class Meta:
-        ordering = ["order"]  # Ordenar siempre por el campo 'order'
+        ordering = ["order"]
 
 
 class Badge(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
-    slug = models.SlugField(unique=True)  # Identificador único (ej: 'first-review')
+    slug = models.SlugField(unique=True)
     icon_name = models.CharField(
         max_length=50, default="star"
-    )  # Para poner un icono (ej: 'trophy', 'star')
-    color = models.CharField(max_length=20, default="yellow")  # Para el color del icono
+    )
+    color = models.CharField(max_length=20, default="yellow")
 
     def __str__(self):
         return self.name
@@ -139,10 +133,7 @@ class UserBadge(models.Model):
     earned_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user", "badge")  # No puedes ganar el mismo logro dos veces
-
-
-# games/models.py
+        unique_together = ("user", "badge")
 
 
 class Notification(models.Model):
@@ -154,18 +145,17 @@ class Notification(models.Model):
 
     sender = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="sent_notifications"
-    )  # Quién lo hizo
+    )
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
-    )  # Para quién es
+    )
     notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     text_preview = models.CharField(
         max_length=100, blank=True
-    )  # Resumen (ej: "Zelda Breath...")
+    )
     date = models.DateTimeField(auto_now_add=True)
-    is_seen = models.BooleanField(default=False)  # ¿Ya la vio?
+    is_seen = models.BooleanField(default=False)
 
-    # Para saber a dónde redirigir al hacer clic (ID del juego, del perfil, etc)
     target_object_id = models.IntegerField(null=True, blank=True)
 
     def __str__(self):

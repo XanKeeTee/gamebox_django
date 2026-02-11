@@ -6,28 +6,24 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
-from .models import Game, UserGame, Profile, Comment, GameList, ListEntry
 from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notification
-from .models import Game, UserGame, Profile, Comment, GameList, ListEntry
 from django.http import HttpResponseNotFound, JsonResponse
+from django.views.decorators.cache import cache_page
 
-
+@cache_page(60 * 15)
 def index(request):
     service = IGDBService()
     
-    # 1. Trending (Top Games)
     trending_games = service.get_top_games()
     for game in trending_games:
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 2. Upcoming (Para el carrusel, pedimos solo 5 o 6)
-    upcoming_games = service.get_upcoming_games()[:10] # Cogemos los 10 primeros
+    upcoming_games = service.get_upcoming_games()[:10]
     for game in upcoming_games:
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 3. Feed Social (Igual que antes)
     feed_items = []
     if request.user.is_authenticated:
         following_ids = request.user.profile.follows.values_list('user__id', flat=True)
@@ -38,8 +34,8 @@ def index(request):
             .order_by('-updated_at')[:20]
 
     return render(request, 'games/index.html', {
-        'hero_game': trending_games[0] if trending_games else None, # El juego #1 para el banner gigante
-        'trending_games': trending_games[1:], # El resto para la lista lateral
+        'hero_game': trending_games[0] if trending_games else None,
+        'trending_games': trending_games[1:],
         'upcoming': upcoming_games,
         'feed_items': feed_items
     })
@@ -49,7 +45,6 @@ def detail(request, game_id):
     service = IGDBService()
     game = service.get_game_detail(game_id)
 
-    # Limpieza de imágenes (igual que antes)
     if game:
         if "cover" in game:
             game["cover"]["url"] = game["cover"]["url"].replace(
@@ -59,18 +54,14 @@ def detail(request, game_id):
             for screen in game["screenshots"]:
                 screen["url"] = screen["url"].replace("t_thumb", "t_screenshot_huge")
 
-    # Datos del usuario actual (TU interacción)
     user_game = None
     user_game_status = None
 
-    # --- NUEVO: RESEÑAS DE LA COMUNIDAD ---
     community_reviews = []
 
-    # Buscamos si el juego existe en nuestra BD local
     local_game = Game.objects.filter(igdb_id=game_id).first()
 
     if local_game:
-        # 1. Tu interacción personal
         if request.user.is_authenticated:
             user_game = UserGame.objects.filter(
                 user=request.user, game=local_game
@@ -78,8 +69,6 @@ def detail(request, game_id):
             if user_game:
                 user_game_status = user_game.status
 
-        # 2. Buscar reseñas de OTROS (excluyendo vacías)
-        # select_related('user__profile') es vital para cargar los avatares rápido
         community_reviews = (
             UserGame.objects.filter(game=local_game)
             .exclude(review__exact="")
@@ -95,20 +84,15 @@ def detail(request, game_id):
             "game": game,
             "user_game_status": user_game_status,
             "user_game": user_game,
-            "community_reviews": community_reviews,  # <--- Pasamos esto al HTML
+            "community_reviews": community_reviews,
         },
     )
 
 
-# En games/views.py
-
-
 @login_required(login_url="/admin/login/")
 def add_to_library(request, game_id, status):
-    # 1. Verificar si el juego ya existe en nuestra BD local (Igual que antes)
     game = Game.objects.filter(igdb_id=game_id).first()
 
-    # Si no existe, lo traemos de la API (Igual que antes)
     if not game:
         service = IGDBService()
         game_data = service.get_game_detail(game_id)
@@ -126,29 +110,21 @@ def add_to_library(request, game_id, status):
                 cover_url=cover_url,
             )
 
-    # 2. LÓGICA DE TOGGLE (Aquí está el cambio)
     if game:
-        # Buscamos si ya tienes este juego en tu lista
         existing_entry = UserGame.objects.filter(user=request.user, game=game).first()
 
         if existing_entry:
-            # CASO A: Si le das click al mismo botón que ya tenías marcado...
             if existing_entry.status == status:
-                existing_entry.delete()  # ...¡Lo borramos! (Quitar like/estado)
+                existing_entry.delete()
 
-            # CASO B: Si le das click a un botón distinto (ej: pasar de Backlog a Playing)...
             else:
-                existing_entry.status = status  # ...Actualizamos el estado
+                existing_entry.status = status
                 existing_entry.save()
 
         else:
-            # CASO C: No lo tenías, así que lo creamos nuevo
             UserGame.objects.create(user=request.user, game=game, status=status)
 
     return redirect("detail", game_id=game_id)
-
-
-# games/views.py
 
 
 @login_required(login_url="login")
@@ -160,20 +136,14 @@ def profile(request):
     )
     my_lists = request.user.lists.all().order_by("-created_at")
 
-    # --- LÓGICA DE ESTADÍSTICAS ---
-    # 1. Contar estados para el gráfico de "Pastel"
-    # Esto devuelve algo como: {'playing': 2, 'completed': 5, 'backlog': 10}
     status_counts = my_games.values("status").annotate(total=Count("status"))
 
-    # Formateamos para pasar fácil al HTML
     status_data = {"playing": 0, "completed": 0, "backlog": 0, "dropped": 0}
     for item in status_counts:
         if item["status"] in status_data:
             status_data[item["status"]] = item["total"]
 
-    # 2. Distribución de Notas (Histograma)
-    # Agrupamos notas en rangos (1-20, 21-40, 41-60, 61-80, 81-100)
-    ratings_distribution = [0, 0, 0, 0, 0]  # 5 grupos
+    ratings_distribution = [0, 0, 0, 0, 0]
     rated_games = my_games.filter(rating__isnull=False)
 
     for game in rated_games:
@@ -198,7 +168,6 @@ def profile(request):
         "lists": my_lists,
         "total_count": my_games.count(),
         "fav_count": my_games.filter(is_favorite=True).count(),
-        # DATOS PARA GRÁFICOS
         "status_data": status_data,
         "ratings_distribution": ratings_distribution,
     }
@@ -206,14 +175,13 @@ def profile(request):
 
 
 def search(request):
-    query = request.GET.get("q")  # Capturamos lo que viene de la URL ?q=zelda
+    query = request.GET.get("q")
     games = []
 
     if query:
         service = IGDBService()
         games = service.search_games(query)
 
-        # Limpieza de imágenes (igual que en el index)
         for game in games:
             if "cover" in game:
                 game["cover"]["url"] = game["cover"]["url"].replace(
@@ -226,26 +194,22 @@ def search(request):
 
 
 @login_required(login_url="/admin/login/")
-@require_POST  # Solo aceptamos envíos de formulario, no visitas directas
+@require_POST
 def update_review(request, game_id):
-    # Buscamos el juego en local (ya debe existir porque primero lo añades a la librería)
     game = get_object_or_404(Game, igdb_id=game_id)
 
-    # Buscamos o creamos la entrada del usuario
     user_game, created = UserGame.objects.get_or_create(
         user=request.user,
         game=game,
-        defaults={"status": "playing"},  # Por defecto si no existía
+        defaults={"status": "playing"},
     )
 
-    # Capturamos los datos del formulario HTML
     review_text = request.POST.get("review")
     rating_val = request.POST.get("rating")
     is_fav = (
         request.POST.get("is_favorite") == "on"
-    )  # Checkbox HTML envía 'on' si está marcado
+    )
 
-    # Actualizamos
     user_game.review = review_text
     user_game.is_favorite = is_fav
 
@@ -264,7 +228,6 @@ def edit_profile(request):
 
     if request.method == "POST":
         u_form = UserUpdateForm(request.POST, instance=request.user)
-        # IMPORTANTE: request.FILES es necesario para subir imágenes
         p_form = ProfileUpdateForm(
             request.POST, request.FILES, instance=request.user.profile
         )
@@ -272,7 +235,7 @@ def edit_profile(request):
         if u_form.is_valid() and p_form.is_valid():
             u_form.save()
             p_form.save()
-            return redirect("profile")  # Redirige al perfil al terminar
+            return redirect("profile")
     else:
         u_form = UserUpdateForm(instance=request.user)
         p_form = ProfileUpdateForm(instance=request.user.profile)
@@ -286,7 +249,6 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Logueamos al usuario automáticamente tras registrarse
             login(request, user)
             return redirect("index")
     else:
@@ -296,10 +258,8 @@ def register(request):
 
 
 def public_profile(request, username):
-    # Buscamos al usuario por su nombre
     profile_user = get_object_or_404(User, username=username)
 
-    # Traemos sus juegos (Igual que en tu perfil, pero filtrando por ESE usuario)
     my_games = (
         UserGame.objects.filter(user=profile_user)
         .select_related("game")
@@ -308,7 +268,6 @@ def public_profile(request, username):
 
     user_lists = profile_user.lists.all().order_by("-created_at")
 
-    # Filtros
     playing = my_games.filter(status="playing")
     backlog = my_games.filter(status="backlog")
     completed = my_games.filter(status="completed")
@@ -328,7 +287,7 @@ def public_profile(request, username):
         "completed": my_games.filter(status="completed"),
         "favorites": my_games.filter(is_favorite=True),
         "reviews": my_games.exclude(review__exact="").exclude(review__isnull=True),
-        "lists": user_lists,  # <--- AÑADIR ESTO
+        "lists": user_lists,
         "total_count": my_games.count(),
         "fav_count": my_games.filter(is_favorite=True).count(),
         "is_following": is_following,
@@ -338,34 +297,27 @@ def public_profile(request, username):
     return render(request, "games/public_profile.html", context)
 
 
-# --- ACCIÓN DE SEGUIR ---
 @login_required(login_url="login")
 def toggle_follow(request, username):
     target_user = get_object_or_404(User, username=username)
     my_profile = request.user.profile
 
-    # No puedes seguirte a ti mismo
     if target_user != request.user:
         if my_profile.follows.filter(id=target_user.profile.id).exists():
-            # Si ya lo sigo, lo borro (Unfollow)
             my_profile.follows.remove(target_user.profile)
         else:
-            # Si no lo sigo, lo añado (Follow)
             my_profile.follows.add(target_user.profile)
 
     return redirect("public_profile", username=username)
 
 
 def community(request):
-    # 1. Buscar usuarios populares (ordenados por número de seguidores)
-    # Annotate crea un campo "falso" temporal llamado num_followers para ordenar
     popular_users = User.objects.annotate(
         num_followers=Count("profile__followed_by")
     ).order_by("-num_followers")[
         :6
-    ]  # Top 6
+    ]
 
-    # 2. Reseñas recientes globales (de cualquier usuario)
     recent_reviews = (
         UserGame.objects.exclude(review="")
         .exclude(review__isnull=True)
@@ -388,7 +340,6 @@ def toggle_like(request, review_id):
         review.likes.remove(request.user)
     else:
         review.likes.add(request.user)
-    # Redirigir a donde estabas (index o perfil)
     return redirect(request.META.get("HTTP_REFERER", "index"))
 
 
@@ -413,24 +364,21 @@ def create_list(request):
             new_list = form.save(commit=False)
             new_list.user = request.user
             new_list.save()
-            return redirect("profile")  # O redirigir a la lista creada
+            return redirect("profile")
     else:
         form = GameListForm()
     return render(request, "games/create_list.html", {"form": form})
 
 
 def list_detail(request, username, slug):
-    # Buscamos la lista por usuario y slug
     game_list = get_object_or_404(GameList, user__username=username, slug=slug)
     return render(request, "games/list_detail.html", {"game_list": game_list})
 
 
 @login_required(login_url="login")
 def add_to_list_view(request, game_id):
-    # 1. Intentamos buscar el juego en la base de datos local
     game = Game.objects.filter(igdb_id=game_id).first()
 
-    # 2. Si NO existe en local, lo descargamos de la API de IGDB y lo creamos
     if not game:
         service = IGDBService()
         game_data = service.get_game_detail(game_id)
@@ -450,18 +398,14 @@ def add_to_list_view(request, game_id):
                 cover_url=cover_url,
             )
         else:
-            # Si el juego no existe ni en la API, devolvemos error 404
             return HttpResponseNotFound("Juego no encontrado")
 
-    # 3. Lógica original para guardar en la lista
     if request.method == "POST":
         list_id = request.POST.get("list_id")
         comment = request.POST.get("comment")
 
-        # Aseguramos que la lista pertenezca al usuario
         target_list = get_object_or_404(GameList, id=list_id, user=request.user)
 
-        # Evitar duplicados en la misma lista
         if not ListEntry.objects.filter(game_list=target_list, game=game).exists():
             ListEntry.objects.create(
                 game_list=target_list,
@@ -469,10 +413,8 @@ def add_to_list_view(request, game_id):
                 comment=comment,
                 order=target_list.entries.count() + 1,
             )
-        # Volver a la ficha del juego
         return redirect("detail", game_id=game_id)
 
-    # GET: Mostrar formulario de selección
     my_lists = GameList.objects.filter(user=request.user)
     return render(
         request, "games/add_to_list.html", {"game": game, "my_lists": my_lists}
@@ -491,7 +433,6 @@ def toggle_like(request, review_id):
         review.likes.add(request.user)
         liked = True
 
-    # Si la petición viene por AJAX (fetch), devolvemos JSON
     return JsonResponse({"liked": liked, "count": review.likes.count()})
 
 
@@ -519,10 +460,8 @@ def toggle_follow(request, username):
 
 @login_required(login_url="login")
 def notifications_view(request):
-    # Obtener todas ordenadas por fecha
     notifs = Notification.objects.filter(user=request.user).order_by("-date")
 
-    # Marcar todas como vistas al entrar
     unseen = notifs.filter(is_seen=False)
     unseen.update(is_seen=True)
 
@@ -533,7 +472,6 @@ def releases(request):
     service = IGDBService()
     upcoming_games = service.get_upcoming_games()
 
-    # Arreglamos las imágenes como siempre
     for game in upcoming_games:
         if "cover" in game:
             game["cover"]["url"] = game["cover"]["url"].replace(
@@ -541,3 +479,21 @@ def releases(request):
             )
 
     return render(request, "games/releases.html", {"games": upcoming_games})
+
+def category(request, genre_id):
+    service = IGDBService()
+    games = service.get_games_by_genre(genre_id)
+    
+    # Un pequeño diccionario para poner el título bonito
+    genre_names = {
+        12: "RPG (Rol)",
+        5: "Shooter",
+        31: "Aventura",
+        32: "Indie",
+        15: "Estrategia",
+        14: "Deportes"
+    }
+    title = genre_names.get(genre_id, "Juegos")
+    
+    return render(request, 'games/category.html', {'games': games, 'title': title})
+

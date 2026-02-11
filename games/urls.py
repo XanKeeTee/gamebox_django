@@ -36,4 +36,5 @@ urlpatterns = [
     ),
     path('notifications/', views.notifications_view, name='notifications'),
     path('releases/', views.releases, name='releases'),
+    path('category/<int:genre_id>/', views.category, name='category'),
 ]

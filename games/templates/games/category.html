@@ -1,0 +1,29 @@
+{% extends 'games/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-24">
+    <h1 class="text-4xl font-black text-white mb-8 flex items-center gap-3">
+        <span class="text-indigo-500">#</span> {{ title }}
+    </h1>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        {% for game in games %}
+        <a href="{% url 'detail' game.id %}" class="group relative bg-zinc-900 rounded-xl overflow-hidden hover:-translate-y-2 transition duration-300 shadow-lg border border-white/5">
+            <div class="aspect-[3/4] overflow-hidden">
+                {% if game.cover %}
+                    <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                {% endif %}
+            </div>
+            <div class="p-4">
+                <h3 class="font-bold text-white text-sm line-clamp-1 group-hover:text-indigo-400 transition">{{ game.name }}</h3>
+                {% if game.total_rating %}
+                    <div class="text-xs font-bold text-green-400 mt-1">{{ game.total_rating|floatformat:0 }}%</div>
+                {% endif %}
+            </div>
+        </a>
+        {% empty %}
+        <p class="text-gray-500">No se encontraron juegos en esta categoría.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

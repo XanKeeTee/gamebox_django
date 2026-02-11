@@ -1,21 +1,17 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv # Asegúrate de que esto está aquí
+from dotenv import load_dotenv
 
-# 1. Cargar el archivo .env
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 2. Leer claves. Si no existen, lanzará error (mejor que fallar en silencio)
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-clave-por-defecto-para-desarrollo')
 
-# Debug debe ser True para ver errores en pantalla
 DEBUG = os.getenv('DEBUG') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
-# 3. Aplicaciones Instaladas
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -23,7 +19,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Tus apps
     'games',
 ]
 
@@ -43,7 +38,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [], # Django busca automáticamente en carpetas 'templates' dentro de las apps
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -59,7 +54,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# 4. Base de Datos (SQLite por defecto)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -67,7 +61,6 @@ DATABASES = {
     }
 }
 
-# 5. Validadores de Contraseña
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -83,29 +76,23 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# 6. Internacionalización
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# 7. Archivos Estáticos (CSS, JS, Imágenes)
 STATIC_URL = 'static/'
 
-# IMPORTANTE: Configuración de Media (Avatares y Banners)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# 8. Configuración de Login/Logout
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
-# 9. CLAVES DE LA API IGDB (Leídas del .env)
-IGDB_CLIENT_ID = os.getenv('IGDB_CLIENT_ID')
-IGDB_CLIENT_SECRET = os.getenv('IGDB_CLIENT_SECRET')
+IGDB_CLIENT_ID = "gre1urnnley3l5ely8qdblj9cnrjck"
+IGDB_ACCESS_TOKEN = "dysnhpzjliradaefqrry9p3mtqsp9e"
 
-# Tipo de campo para ID automáticos
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
