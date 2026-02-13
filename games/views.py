@@ -9,6 +9,7 @@ from django.db.models import Q, Count
 from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notification
 from django.http import HttpResponseNotFound, JsonResponse
 from django.views.decorators.cache import cache_page
+from .forms import GameListForm 
 
 @cache_page(60 * 15)
 def index(request):
@@ -497,3 +498,19 @@ def category(request, genre_id):
     
     return render(request, 'games/category.html', {'games': games, 'title': title})
 
+@login_required
+def create_list(request):
+    if request.method == 'POST':
+        form = GameListForm(request.POST)
+        if form.is_valid():
+            # Guardamos la lista pero sin enviarla a la BD todavía
+            game_list = form.save(commit=False)
+            # Le asignamos el usuario logueado
+            game_list.user = request.user
+            # Ahora sí guardamos
+            game_list.save()
+            return redirect('profile') # O redirige a donde prefieras
+    else:
+        form = GameListForm()
+    
+    return render(request, 'games/create_list.html', {'form': form})
