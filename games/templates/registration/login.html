@@ -1,50 +1,68 @@
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <title>Iniciar Sesión - GameBox</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { font-family: sans-serif; background-color: #050505; color: white; }</style>
-</head>
-<body class="min-h-screen flex items-center justify-center relative overflow-hidden">
-    
-    <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
+{% extends 'games/base.html' %}
+{% load socialaccount %}
 
-    <div class="relative z-10 w-full max-w-md p-8 bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl">
-        
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-black tracking-tighter mb-2">GAMEBOX</h1>
-            <p class="text-gray-400">Tu santuario de videojuegos</p>
-        </div>
+{% block content %}
+<div class="max-w-md mx-auto px-6 py-24">
+    <div class="bg-zinc-900 p-8 rounded-2xl border border-white/10 shadow-xl">
+        <h1 class="text-3xl font-black text-white mb-2 text-center">Iniciar Sesión</h1>
+        <p class="text-gray-400 text-sm text-center mb-8">¡Bienvenido de nuevo a GameBox!</p>
 
-        <form method="post" class="space-y-6">
+        <form method="POST" action="{% url 'login' %}" class="space-y-6">
             {% csrf_token %}
             
             {% if form.errors %}
-                <div class="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
-                    Usuario o contraseña incorrectos.
-                </div>
+            <div class="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-xl text-center font-bold">
+                Usuario o contraseña incorrectos.
+            </div>
             {% endif %}
 
             <div>
-                <label class="block text-sm font-bold text-gray-400 mb-2">Usuario</label>
-                <input type="text" name="username" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 transition" required autofocus>
+                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Usuario</label>
+                <input type="text" name="username" class="w-full bg-black/50 text-white rounded-xl p-4 border border-white/10 focus:border-indigo-500 outline-none transition" required>
             </div>
 
             <div>
-                <label class="block text-sm font-bold text-gray-400 mb-2">Contraseña</label>
-                <input type="password" name="password" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500 transition" required>
+                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Contraseña</label>
+                <input type="password" name="password" class="w-full bg-black/50 text-white rounded-xl p-4 border border-white/10 focus:border-indigo-500 outline-none transition" required>
             </div>
 
-            <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition shadow-lg shadow-indigo-500/20">
-                Entrar
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-indigo-500/20">
+                Entrar con GameBox
             </button>
         </form>
 
-        <div class="mt-8 text-center text-sm text-gray-500">
-            ¿No tienes cuenta? <a href="{% url 'register' %}" class="text-indigo-400 hover:text-white font-bold transition">Regístrate</a>
+        <div class="mt-8">
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/10"></div></div>
+                <div class="relative flex justify-center text-sm"><span class="px-3 bg-zinc-900 text-gray-500 font-bold uppercase text-xs tracking-wider">O inicia con</span></div>
+            </div>
+
+            <div class="mt-6 grid grid-cols-2 gap-3">
+                <a href="{% provider_login_url 'google' %}" class="flex items-center justify-center px-4 py-3 border border-white/10 rounded-xl shadow-sm bg-zinc-800 text-sm font-bold text-white hover:bg-zinc-700 hover:scale-105 transition">
+                    <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .533 5.333.533 12S5.867 24 12.48 24c3.44 0 6.053-1.147 8.213-3.307C22.96 18.52 23.68 15.52 23.68 12.8c0-.64-.067-1.253-.187-1.88h-11.013z"/></svg>
+                    Google
+                </a>
+
+                <a href="{% provider_login_url 'steam' %}" class="flex items-center justify-center px-4 py-3 border border-white/10 rounded-xl shadow-sm bg-[#171a21] text-sm font-bold text-white hover:bg-black hover:scale-105 transition">
+                    <i class="fab fa-steam text-lg mr-2"></i>
+                    Steam
+                </a>
+
+                <a href="{% provider_login_url 'discord' %}" class="flex items-center justify-center px-4 py-3 border border-white/10 rounded-xl shadow-sm bg-[#5865F2] text-sm font-bold text-white hover:bg-[#4752C4] hover:scale-105 transition">
+                    <i class="fab fa-discord text-lg mr-2"></i>
+                    Discord
+                </a>
+
+                <a href="{% provider_login_url 'twitch' %}" class="flex items-center justify-center px-4 py-3 border border-white/10 rounded-xl shadow-sm bg-[#9146FF] text-sm font-bold text-white hover:bg-[#772CE8] hover:scale-105 transition">
+                    <i class="fab fa-twitch text-lg mr-2"></i>
+                    Twitch
+                </a>
+            </div>
         </div>
+
+        <p class="mt-8 text-center text-sm text-gray-400">
+            ¿No tienes cuenta? <a href="{% url 'register' %}" class="text-indigo-400 hover:text-white font-bold transition">Regístrate aquí</a>
+        </p>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

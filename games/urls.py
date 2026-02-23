@@ -22,7 +22,7 @@ urlpatterns = [
     ),
     path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
     path("u/<str:username>/", views.public_profile, name="public_profile"),
-    # Ruta para seguir
+    path('explore/', views.advanced_search, name='explore'),
     path("u/<str:username>/follow/", views.toggle_follow, name="toggle_follow"),
     path("community/", views.community, name="community"),
     path("review/<int:review_id>/like/", views.toggle_like, name="toggle_like"),

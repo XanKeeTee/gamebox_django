@@ -120,3 +120,40 @@ class IGDBService:
                     game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
             return games
         return []
+    
+    def advanced_search(self, platform=None, genre=None, year=None, min_rating=None):
+        where_clauses = ["cover != null"]
+        
+        if platform and platform != 'all':
+            where_clauses.append(f"platforms = ({platform})")
+        
+        if genre and genre != 'all':
+            where_clauses.append(f"genres = ({genre})")
+            
+        if year and year != 'all':
+            from datetime import datetime
+            start_date = int(datetime(int(year), 1, 1).timestamp())
+            end_date = int(datetime(int(year), 12, 31).timestamp())
+            where_clauses.append(f"first_release_date >= {start_date} & first_release_date <= {end_date}")
+            
+        if min_rating and min_rating != 'all':
+            where_clauses.append(f"total_rating >= {min_rating}")
+
+        final_where = " & ".join(where_clauses)
+        
+        data = {
+            "fields": "name, cover.url, first_release_date, total_rating, slug",
+            "where": final_where,
+            "sort": "total_rating desc",
+            "limit": "30"
+        }
+        
+        response = requests.post(f"{self.base_url}/games", headers=self.headers, data=self._build_query(data))
+        
+        if response.status_code == 200:
+            games = response.json()
+            for game in games:
+                if 'cover' in game:
+                    game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+            return games
+        return []

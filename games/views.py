@@ -497,3 +497,24 @@ def category(request, genre_id):
     
     return render(request, 'games/category.html', {'games': games, 'title': title})
 
+def advanced_search(request):
+    platform = request.GET.get('platform')
+    genre = request.GET.get('genre')
+    year = request.GET.get('year')
+    min_rating = request.GET.get('rating')
+    
+    games = []
+    # Solo buscamos en la API si el usuario ha tocado algún filtro
+    if platform or genre or year or min_rating:
+        # Importamos el servicio si no estaba ya importado arriba
+        from .services import IGDBService 
+        service = IGDBService()
+        games = service.advanced_search(platform, genre, year, min_rating)
+        
+    return render(request, 'games/advanced_search.html', {
+        'games': games,
+        'selected_platform': platform,
+        'selected_genre': genre,
+        'selected_year': year,
+        'selected_rating': min_rating
+    })
