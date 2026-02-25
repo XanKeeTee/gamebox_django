@@ -12,6 +12,7 @@ from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notif
 from django.http import HttpResponseNotFound, JsonResponse
 from django.views.decorators.cache import cache_page
 from django.contrib import messages
+from .forms import GameListForm
 
 @cache_page(60 * 15)
 def index(request):

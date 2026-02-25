@@ -2,16 +2,42 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.utils.text import slugify
 
 class Game(models.Model):
     igdb_id = models.IntegerField(unique=True)
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     cover_url = models.URLField(null=True, blank=True)
+    url = models.URLField(null=True, blank=True)  # Campo para la URL del vídeo
 
     def __str__(self):
         return self.name
+    
+    @property
+    def embed_link(self):
+        """
+        Transforma cualquier enlace de YouTube (normal o corto) en un enlace 'embed' válido.
+        Elimina parámetros extra como &t= o &feature=.
+        """
+        if not self.url:
+            return ""
+            
+        # Si la URL tiene 'v=', coge lo que hay justo después hasta el próximo '&'
+        if 'v=' in self.url:
+            try:
+                return 'https://www.youtube.com/embed/' + self.url.split('v=')[1].split('&')[0]
+            except IndexError:
+                return self.url  # Si falla el split, devuelve la original por seguridad
+        
+        # Si es un enlace corto tipo youtu.be/CODIGO
+        elif 'youtu.be' in self.url:
+            try:
+                return 'https://www.youtube.com/embed/' + self.url.split('/')[-1].split('?')[0]
+            except IndexError:
+                return self.url
+
+        return self.url
 
 
 class UserGame(models.Model):
@@ -29,6 +55,7 @@ class UserGame(models.Model):
     is_favorite = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Likes a la reseña
     likes = models.ManyToManyField(User, related_name="liked_reviews", blank=True)
 
     def total_likes(self):
@@ -52,14 +79,15 @@ class Profile(models.Model):
     def __str__(self):
         return f"{self.user.username} Profile"
 
-    @receiver(post_save, sender=User)
-    def create_user_profile(sender, instance, created, **kwargs):
-        if created:
-            Profile.objects.create(user=instance)
+# Señales para crear perfil automáticamente al crear usuario
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
 
-    @receiver(post_save, sender=User)
-    def save_user_profile(sender, instance, **kwargs):
-        instance.profile.save()
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class Comment(models.Model):
@@ -78,15 +106,13 @@ class GameList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lists")
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    slug = models.SlugField(blank=True)
+    slug = models.SlugField(blank=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     likes = models.ManyToManyField(User, related_name="liked_lists", blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            from django.utils.text import slugify
-
             base_slug = slugify(self.name)
             slug = base_slug
             counter = 1
@@ -106,9 +132,7 @@ class ListEntry(models.Model):
     )
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     order = models.PositiveIntegerField(default=0)
-    comment = models.TextField(
-        blank=True, null=True
-    )
+    comment = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ["order"]
@@ -118,9 +142,7 @@ class Badge(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
     slug = models.SlugField(unique=True)
-    icon_name = models.CharField(
-        max_length=50, default="star"
-    )
+    icon_name = models.CharField(max_length=50, default="star")
     color = models.CharField(max_length=20, default="yellow")
 
     def __str__(self):
@@ -150,9 +172,7 @@ class Notification(models.Model):
         User, on_delete=models.CASCADE, related_name="notifications"
     )
     notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    text_preview = models.CharField(
-        max_length=100, blank=True
-    )
+    text_preview = models.CharField(max_length=100, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     is_seen = models.BooleanField(default=False)
 

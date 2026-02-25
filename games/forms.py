@@ -36,19 +36,15 @@ class CommentForm(forms.ModelForm):  # <--- Debe ser forms.ModelForm
 class GameListForm(forms.ModelForm):
     class Meta:
         model = GameList
-        fields = ["name", "description"]
+        fields = ['name', 'description']
         widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": "w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 placeholder-gray-500 font-bold",
-                    "placeholder": "Título de la lista (ej: Mis Favoritos de 2024)",
-                }
-            ),
-            "description": forms.Textarea(
-                attrs={
-                    "class": "w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 placeholder-gray-500",
-                    "placeholder": "¿De qué va esta lista?",
-                    "rows": 3,
-                }
-            ),
+            'name': forms.TextInput(attrs={
+                'class': 'w-full p-2 rounded bg-gray-800 text-white border border-gray-700', 
+                'placeholder': 'Ej: RPGs favoritos'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full p-2 rounded bg-gray-800 text-white border border-gray-700', 
+                'rows': 4,
+                'placeholder': 'Descripción de tu lista...'
+            }),
         }
