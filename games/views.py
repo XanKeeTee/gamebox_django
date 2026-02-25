@@ -135,14 +135,10 @@ def profile(request):
     """Perfil privado con estadísticas y juegos reales"""
     user = request.user
 
-    # 1. Recuperamos las listas de juegos del usuario
-    # Filtramos por el usuario actual y el estado correspondiente
     favorite_games = UserGame.objects.filter(user=user, is_favorite=True).select_related('game')
     backlog_games = UserGame.objects.filter(user=user, status='backlog').select_related('game')[:6]
     completed_games = UserGame.objects.filter(user=user, status='completed').select_related('game')[:6]
 
-    # 2. Datos para el gráfico de Distribución (Donut)
-    # Contamos cuántos juegos hay en cada estado
     count_playing = UserGame.objects.filter(user=user, status='playing').count()
     count_completed = UserGame.objects.filter(user=user, status='completed').count()
     count_backlog = UserGame.objects.filter(user=user, status='backlog').count()
@@ -150,8 +146,6 @@ def profile(request):
     
     dist_data = [count_playing, count_completed, count_backlog, count_dropped]
 
-    # 3. Datos para el gráfico de Puntuaciones (Barras)
-    # Contamos cuántas veces ha puesto cada nota (del 1 al 5)
     ratings = []
     for i in range(1, 6):
         count = UserGame.objects.filter(user=user, rating=i).count()
