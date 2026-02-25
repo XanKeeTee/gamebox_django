@@ -78,7 +78,7 @@
             <h2 class="text-xl font-black text-blue-500 mb-6 uppercase tracking-tighter">Backlog</h2>
             <div class="grid grid-cols-3 gap-4">
                 {% for user_game in backlog_games %}
-                    <a href="{% url 'detail' user_game.game.id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
+                    <a href="{% url 'detail' user_game.game.igdb_id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
                         <img src="{{ user_game.game.cover_url }}" class="w-full h-full object-cover">
                     </a>
                 {% empty %}
@@ -93,7 +93,7 @@
             <h2 class="text-xl font-black text-yellow-500 mb-6 uppercase tracking-tighter">Completados</h2>
             <div class="grid grid-cols-3 gap-4">
                 {% for user_game in completed_games %}
-                    <a href="{% url 'detail' user_game.game.id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
+                    <a href="{% url 'detail' user_game.game.igdb_id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
                         <img src="{{ user_game.game.cover_url }}" class="w-full h-full object-cover">
                     </a>
                 {% empty %}
