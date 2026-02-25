@@ -2,7 +2,7 @@
 {% block title %}Comunidad - GameBox{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 md:px-6 pt-10">
+<div class="max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-20">
     
     <div class="mb-16">
         <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -11,7 +11,7 @@
         
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {% for u in popular_users %}
-            <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center hover:bg-zinc-900 transition group relative overflow-hidden">
+            <div class="user-card bg-zinc-900/50 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center hover:bg-zinc-900 transition group relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
                 
                 <a href="{% url 'public_profile' u.username %}" class="relative z-10">
@@ -23,11 +23,17 @@
                         {% endif %}
                     </div>
                     <h3 class="font-bold text-white group-hover:text-indigo-400 transition">{{ u.username }}</h3>
-                    <p class="text-xs text-gray-500 font-bold mt-1">{{ u.profile.followed_by.count }} Seguidores</p>
+                    <p class="text-xs text-gray-500 font-bold mt-1 followers-count">{{ u.profile.followed_by.count }} Seguidores</p>
                 </a>
                 
                 {% if user.is_authenticated and user != u %}
-                    <button onclick="toggleFollowFromCard(this, '{{ u.username }}')" class="mt-4 px-4 py-1.5 rounded-full text-xs font-bold border border-white/10 hover:bg-white hover:text-black transition w-full">Ver Perfil</button>
+                    <button onclick="toggleFollow(this)" data-url="{% url 'toggle_follow' u.username %}" class="mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border {% if user.profile in u.profile.followed_by.all %} bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500 {% else %} border-transparent bg-white text-black hover:bg-gray-200 {% endif %}">
+                        {% if user.profile in u.profile.followed_by.all %}
+                            Dejar de seguir
+                        {% else %}
+                            + Seguir
+                        {% endif %}
+                    </button>
                 {% endif %}
             </div>
             {% endfor %}
@@ -76,9 +82,9 @@
                             <p class="text-gray-300 text-sm italic mb-4">"{{ item.review }}"</p>
 
                             <div class="flex items-center gap-4 border-t border-white/5 pt-3">
-                                <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
+                                <button onclick="toggleLike(this)" data-url="{% url 'toggle_like' item.id %}" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
-                                    <span class="like-count">{{ item.total_likes }}</span> Likes
+                                    <span class="like-count">{{ item.likes.count }}</span> Likes
                                 </button>
                                 <span class="text-xs text-gray-600">{{ item.updated_at|timesince }} ago</span>
                             </div>
@@ -90,23 +96,75 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-    // Reutilizamos la función de Like del index
-    function toggleLike(btn, id) {
-        fetch(`/review/${id}/like/`).then(r => r.json()).then(data => {
+    function toggleLike(btn) {
+        // Leemos la URL generada por Django directamente del botón
+        const targetUrl = btn.getAttribute('data-url');
+        
+        fetch(targetUrl)
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+                return null;
+            }
+            if (!response.ok) throw new Error("Error en la petición: " + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+            
             btn.querySelector('.like-count').innerText = data.count;
             const svg = btn.querySelector('svg');
+            
             if(data.liked) {
-                btn.classList.replace('text-gray-500', 'text-pink-500');
+                btn.classList.remove('text-gray-500', 'hover:text-pink-400');
+                btn.classList.add('text-pink-500');
                 svg.setAttribute('fill', 'currentColor');
             } else {
-                btn.classList.replace('text-pink-500', 'text-gray-500');
+                btn.classList.remove('text-pink-500');
+                btn.classList.add('text-gray-500', 'hover:text-pink-400');
                 svg.setAttribute('fill', 'none');
             }
-        });
+        })
+        .catch(err => console.error("Error procesando Like:", err));
+    }
+
+    function toggleFollow(btn) {
+        // Leemos la URL generada por Django directamente del botón
+        const targetUrl = btn.getAttribute('data-url');
+
+        fetch(targetUrl)
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+                return null;
+            }
+            if (!response.ok) throw new Error("Error en la petición: " + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (!data) return;
+
+            // Buscamos la tarjeta usando la clase segura 'user-card'
+            const card = btn.closest('.user-card');
+            if (card) {
+                const countEl = card.querySelector('.followers-count');
+                if (countEl && data.followers_count !== undefined) {
+                    countEl.innerText = data.followers_count + " Seguidores";
+                }
+            }
+
+            // Cambiamos el botón
+            if (data.following) {
+                btn.innerText = "Dejar de seguir";
+                btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500";
+            } else {
+                btn.innerText = "+ Seguir";
+                btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border border-transparent bg-white text-black hover:bg-gray-200";
+            }
+        })
+        .catch(err => console.error("Error procesando Follow:", err));
     }
 </script>
 {% endblock %}

@@ -12,6 +12,7 @@ from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notif
 from django.http import HttpResponseNotFound, JsonResponse
 from django.views.decorators.cache import cache_page
 from django.contrib import messages
+from .forms import GameListForm 
 from .forms import GameListForm
 
 @cache_page(60 * 15)
@@ -514,3 +515,20 @@ def advanced_search(request):
         'selected_year': year,
         'selected_rating': min_rating
     })
+
+@login_required
+def create_list(request):
+    if request.method == 'POST':
+        form = GameListForm(request.POST)
+        if form.is_valid():
+            # Guardamos la lista pero sin enviarla a la BD todavía
+            game_list = form.save(commit=False)
+            # Le asignamos el usuario logueado
+            game_list.user = request.user
+            # Ahora sí guardamos
+            game_list.save()
+            return redirect('profile') # O redirige a donde prefieras
+    else:
+        form = GameListForm()
+    
+    return render(request, 'games/create_list.html', {'form': form})
