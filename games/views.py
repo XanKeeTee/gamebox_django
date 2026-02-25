@@ -293,21 +293,6 @@ def public_profile(request, username):
     }
     return render(request, "games/profile/public_profile.html", context)
 
-
-@login_required(login_url="login")
-def toggle_follow(request, username):
-    target_user = get_object_or_404(User, username=username)
-    my_profile = request.user.profile
-
-    if target_user != request.user:
-        if my_profile.follows.filter(id=target_user.profile.id).exists():
-            my_profile.follows.remove(target_user.profile)
-        else:
-            my_profile.follows.add(target_user.profile)
-
-    return redirect("public_profile", username=username)
-
-
 def community(request):
     popular_users = User.objects.annotate(
         num_followers=Count("profile__followed_by")
@@ -328,17 +313,6 @@ def community(request):
         "games/community/community.html",
         {"popular_users": popular_users, "recent_reviews": recent_reviews},
     )
-
-
-@login_required(login_url="login")
-def toggle_like(request, review_id):
-    review = get_object_or_404(UserGame, id=review_id)
-    if request.user in review.likes.all():
-        review.likes.remove(request.user)
-    else:
-        review.likes.add(request.user)
-    return redirect(request.META.get("HTTP_REFERER", "index"))
-
 
 @login_required(login_url="login")
 def add_comment(request, review_id):
