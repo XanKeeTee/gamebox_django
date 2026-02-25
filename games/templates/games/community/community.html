@@ -23,11 +23,11 @@
                         {% endif %}
                     </div>
                     <h3 class="font-bold text-white group-hover:text-indigo-400 transition">{{ u.username }}</h3>
-                    <p class="text-xs text-gray-500 font-bold mt-1 followers-count">{{ u.profile.followed_by.count }} Seguidores</p>
+                    <p id="followers-count-{{ u.username }}" class="text-xs text-gray-500 font-bold mt-1">{{ u.profile.followed_by.count }} Seguidores</p>
                 </a>
-                
+
                 {% if user.is_authenticated and user != u %}
-                    <button onclick="toggleFollow(this)" data-url="{% url 'toggle_follow' u.username %}" class="mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border {% if user.profile in u.profile.followed_by.all %} bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500 {% else %} border-transparent bg-white text-black hover:bg-gray-200 {% endif %}">
+                    <button onclick="toggleFollowFromCard(this, '{{ u.username }}')" class="mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border {% if user.profile in u.profile.followed_by.all %} bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500 {% else %} border-transparent bg-white text-black hover:bg-gray-200 {% endif %}">
                         {% if user.profile in u.profile.followed_by.all %}
                             Dejar de seguir
                         {% else %}
@@ -98,73 +98,51 @@
 </div>
 
 <script>
-    function toggleLike(btn) {
-        // Leemos la URL generada por Django directamente del botón
-        const targetUrl = btn.getAttribute('data-url');
-        
-        fetch(targetUrl)
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-                return null;
-            }
-            if (!response.ok) throw new Error("Error en la petición: " + response.status);
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-            
+    // Reutilizamos la función de Like del index
+    function toggleLike(btn, id) {
+        fetch(`/review/${id}/like/`).then(r => r.json()).then(data => {
             btn.querySelector('.like-count').innerText = data.count;
             const svg = btn.querySelector('svg');
-            
             if(data.liked) {
-                btn.classList.remove('text-gray-500', 'hover:text-pink-400');
-                btn.classList.add('text-pink-500');
+                btn.classList.replace('text-gray-500', 'text-pink-500');
                 svg.setAttribute('fill', 'currentColor');
             } else {
-                btn.classList.remove('text-pink-500');
-                btn.classList.add('text-gray-500', 'hover:text-pink-400');
+                btn.classList.replace('text-pink-500', 'text-gray-500');
                 svg.setAttribute('fill', 'none');
             }
-        })
-        .catch(err => console.error("Error procesando Like:", err));
+        });
     }
 
-    function toggleFollow(btn) {
-        // Leemos la URL generada por Django directamente del botón
-        const targetUrl = btn.getAttribute('data-url');
-
-        fetch(targetUrl)
-        .then(response => {
-            if (response.redirected) {
-                window.location.href = response.url;
-                return null;
-            }
-            if (!response.ok) throw new Error("Error en la petición: " + response.status);
-            return response.json();
-        })
-        .then(data => {
-            if (!data) return;
-
-            // Buscamos la tarjeta usando la clase segura 'user-card'
-            const card = btn.closest('.user-card');
-            if (card) {
-                const countEl = card.querySelector('.followers-count');
-                if (countEl && data.followers_count !== undefined) {
-                    countEl.innerText = data.followers_count + " Seguidores";
+    // NUEVA FUNCIÓN PARA SEGUIR DESDE LA COMUNIDAD
+    function toggleFollowFromCard(btn, username) {
+        fetch(`/u/${username}/follow/`)
+            .then(response => {
+                // Si requiere login, redirigir
+                if (response.redirected) {
+                    window.location.href = response.url;
+                    return null;
                 }
-            }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
 
-            // Cambiamos el botón
-            if (data.following) {
-                btn.innerText = "Dejar de seguir";
-                btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500";
-            } else {
-                btn.innerText = "+ Seguir";
-                btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border border-transparent bg-white text-black hover:bg-gray-200";
-            }
-        })
-        .catch(err => console.error("Error procesando Follow:", err));
+                // 1. Cambiamos el estilo y texto del botón
+                if (data.following) {
+                    btn.innerText = "Dejar de seguir";
+                    btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500";
+                } else {
+                    btn.innerText = "+ Seguir";
+                    btn.className = "mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full border border-transparent bg-white text-black hover:bg-gray-200";
+                }
+
+                // 2. Buscamos el contador por su ID exacto y lo actualizamos
+                const followersText = document.getElementById(`followers-count-${username}`);
+                if (followersText && data.followers_count !== undefined) {
+                    followersText.innerText = data.followers_count + " Seguidores";
+                }
+            })
+            .catch(error => console.error("Error al seguir al usuario:", error));
     }
 </script>
 {% endblock %}
