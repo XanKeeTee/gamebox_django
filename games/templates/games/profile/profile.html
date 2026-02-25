@@ -1,0 +1,149 @@
+{% extends 'games/base.html' %}
+
+{% block title %}Perfil de {{ user.username }} - GameBox{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="relative w-full h-64 bg-zinc-900 overflow-hidden">
+    {% if user.profile.banner %}
+        <img src="{{ user.profile.banner.url }}" class="absolute inset-0 w-full h-full object-cover">
+    {% else %}
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-zinc-900 opacity-50"></div>
+    {% endif %}
+    <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] to-transparent"></div>
+</div>
+
+<div class="max-w-6xl mx-auto px-6 -mt-20 relative z-10 pb-20">
+    
+    <div class="flex flex-col md:flex-row items-center md:items-end gap-6 mb-12">
+        <div class="w-32 h-32 rounded-full border-4 border-[#09090b] overflow-hidden bg-zinc-800 shadow-xl flex-shrink-0">
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-4xl font-black uppercase">
+                    {{ user.username|slice:":1" }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="text-center md:text-left flex-1 pb-2">
+            <h1 class="text-4xl font-black text-white">{{ user.username }}</h1>
+            <p class="text-gray-400 text-sm mt-1">@{{ user.username }}</p>
+        </div>
+        
+        <div class="pb-2">
+            <a href="{% url 'edit_profile' %}" class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-xl text-sm font-bold text-white transition flex items-center gap-2">
+                <i class="fas fa-pen text-xs"></i> Editar Perfil
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div class="bg-zinc-900/50 rounded-2xl border border-white/5 p-6 flex flex-col items-center backdrop-blur-sm">
+            <span class="text-3xl font-black text-white mb-1">{{ total_count }}</span>
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total</span>
+        </div>
+        <div class="bg-zinc-900/50 rounded-2xl border border-white/5 p-6 flex flex-col items-center backdrop-blur-sm">
+            <span class="text-3xl font-black text-pink-500 mb-1">{{ favorite_games.count }}</span>
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Favoritos</span>
+        </div>
+        <div class="bg-zinc-900/50 rounded-2xl border border-white/5 p-6 flex flex-col items-center backdrop-blur-sm">
+            <span class="text-3xl font-black text-green-500 mb-1">{{ completed_games.count }}</span>
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Completados</span>
+        </div>
+        <div class="bg-zinc-900/50 rounded-2xl border border-white/5 p-6 flex flex-col items-center backdrop-blur-sm">
+            <span class="text-3xl font-black text-blue-500 mb-1">{{ backlog_games.count }}</span>
+            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Backlog</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+        <div class="bg-zinc-900/80 rounded-3xl border border-white/5 p-8 shadow-xl flex flex-col items-center">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider w-full mb-6">Distribución</h3>
+            <div class="relative w-full max-w-[200px] aspect-square">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-zinc-900/80 rounded-3xl border border-white/5 p-8 shadow-xl">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Puntuaciones</h3>
+            <div class="relative w-full h-44">
+                <canvas id="ratingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div>
+            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase tracking-tighter">Backlog</h2>
+            <div class="grid grid-cols-3 gap-4">
+                {% for user_game in backlog_games %}
+                    <a href="{% url 'detail' user_game.game.id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
+                        <img src="{{ user_game.game.cover_url }}" class="w-full h-full object-cover">
+                    </a>
+                {% empty %}
+                    <div class="aspect-[3/4] bg-zinc-900/30 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
+                        <i class="fas fa-clock text-zinc-800 text-2xl"></i>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-black text-yellow-500 mb-6 uppercase tracking-tighter">Completados</h2>
+            <div class="grid grid-cols-3 gap-4">
+                {% for user_game in completed_games %}
+                    <a href="{% url 'detail' user_game.game.id %}" class="aspect-[3/4] rounded-xl overflow-hidden border border-white/5 shadow-2xl hover:scale-105 transition duration-300">
+                        <img src="{{ user_game.game.cover_url }}" class="w-full h-full object-cover">
+                    </a>
+                {% empty %}
+                    <div class="aspect-[3/4] bg-zinc-900/30 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-zinc-800">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Datos reales desde Django
+        const distData = JSON.parse('{{ dist_data|safe }}');
+        const ratingLabels = JSON.parse('{{ rating_labels|safe }}');
+        const ratingData = JSON.parse('{{ rating_data|safe }}');
+
+        Chart.defaults.color = '#6b7280';
+        
+        // Gráfico Donut
+        new Chart(document.getElementById('distributionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Jugando', 'Completados', 'Backlog', 'Abandonados'],
+                datasets: [{
+                    data: distData,
+                    backgroundColor: ['#3b82f6', '#10b981', '#a855f7', '#ef4444'],
+                    borderWidth: 0, cutout: '80%'
+                }]
+            },
+            options: { plugins: { legend: { display: false } } }
+        });
+
+        // Gráfico Barras
+        new Chart(document.getElementById('ratingsChart'), {
+            type: 'bar',
+            data: {
+                labels: ratingLabels,
+                datasets: [{ data: ratingData, backgroundColor: '#4f46e5', borderRadius: 4 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

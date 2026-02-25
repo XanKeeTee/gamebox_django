@@ -1,0 +1,137 @@
+{% extends 'games/base.html' %}
+
+{% block title %}Editar Perfil - GameBox{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="relative w-full h-48 md:h-64 bg-zinc-900 group cursor-pointer overflow-hidden" onclick="document.getElementById('banner-input').click()">
+        
+        {% if user.profile.banner %}
+            <img id="banner-preview" src="{{ user.profile.banner.url }}" class="absolute inset-0 w-full h-full object-cover">
+            <div id="banner-default" class="hidden absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-zinc-900">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+            </div>
+        {% else %}
+            <img id="banner-preview" src="" class="absolute inset-0 w-full h-full object-cover hidden">
+            <div id="banner-default" class="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-zinc-900">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+            </div>
+        {% endif %}
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] to-transparent"></div>
+        
+        <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+            <div class="bg-black/60 px-5 py-2.5 rounded-xl backdrop-blur-sm border border-white/20 flex items-center gap-3 shadow-2xl transform group-hover:scale-105 transition-transform">
+                <i class="fas fa-image text-white"></i>
+                <span class="text-white font-bold text-sm tracking-wider uppercase">Cambiar Banner</span>
+            </div>
+        </div>
+        
+        <input type="file" id="banner-input" name="banner" accept="image/*" class="hidden" onchange="previewBanner(event)">
+    </div>
+
+    <div class="max-w-3xl mx-auto px-6 -mt-16 md:-mt-24 relative z-20 pb-20">
+        
+        <div class="bg-zinc-900 rounded-3xl border border-white/10 shadow-2xl overflow-hidden p-8 sm:p-10">
+            
+            <div class="flex flex-col sm:flex-row items-center gap-8 mb-12">
+                <div class="relative group cursor-pointer rounded-full" onclick="document.getElementById('avatar-input').click()">
+                    <div class="w-32 h-32 rounded-full border-4 border-[#09090b] overflow-hidden bg-zinc-800 shadow-xl">
+                        {% if user.profile.avatar %}
+                            <img id="avatar-preview" src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+                            <div id="avatar-preview-text" class="hidden w-full h-full flex items-center justify-center bg-indigo-600 text-white text-4xl font-black">
+                                {{ user.username|slice:":1"|upper }}
+                            </div>
+                        {% else %}
+                            <div id="avatar-preview-text" class="w-full h-full flex items-center justify-center bg-indigo-600 text-white text-4xl font-black">
+                                {{ user.username|slice:":1"|upper }}
+                            </div>
+                            <img id="avatar-preview" src="" class="w-full h-full object-cover hidden">
+                        {% endif %}
+                    </div>
+                    
+                    <div class="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <i class="fas fa-camera text-white text-2xl"></i>
+                    </div>
+                    
+                    <input type="file" id="avatar-input" name="avatar" accept="image/*" class="hidden" onchange="previewImage(event)">
+                </div>
+                
+                <div class="text-center sm:text-left">
+                    <h1 class="text-3xl font-black text-white">{{ user.username }}</h1>
+                    <p class="text-gray-400 text-sm mt-1">Haz clic en la imagen para cambiar tu avatar, o arriba para el banner.</p>
+                </div>
+            </div>
+
+            <hr class="border-white/5 mb-8">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Nombre a mostrar</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-500"></i>
+                        </div>
+                        <input type="text" name="first_name" value="{{ user.first_name }}" placeholder="Tu apodo público" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Correo Electrónico</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-500"></i>
+                        </div>
+                        <input type="email" name="email" value="{{ user.email }}" placeholder="tu@correo.com" class="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Sobre ti (Biografía)</label>
+                <textarea name="bio" rows="4" placeholder="¿Qué tipo de juegos te gustan? ¡Cuéntaselo a la comunidad!" class="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none">{% if user.profile.bio %}{{ user.profile.bio }}{% endif %}</textarea>
+            </div>
+
+            <div class="flex justify-end gap-4 border-t border-white/5 pt-8">
+                <a href="{% url 'profile' %}" class="px-6 py-3 bg-transparent hover:bg-white/5 text-white font-bold rounded-xl transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.3)] transition hover:-translate-y-1">
+                    Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    // Script del Avatar
+    function previewImage(event) {
+        var reader = new FileReader();
+        reader.onload = function(){
+            var output = document.getElementById('avatar-preview');
+            var textDefault = document.getElementById('avatar-preview-text');
+            if(textDefault) { textDefault.style.display = 'none'; }
+            output.classList.remove('hidden');
+            output.src = reader.result;
+        };
+        if(event.target.files[0]) { reader.readAsDataURL(event.target.files[0]); }
+    }
+
+    // Script del Banner
+    function previewBanner(event) {
+        var reader = new FileReader();
+        reader.onload = function(){
+            var output = document.getElementById('banner-preview');
+            var defaultBanner = document.getElementById('banner-default');
+            if(defaultBanner) { defaultBanner.style.display = 'none'; }
+            output.classList.remove('hidden');
+            output.src = reader.result;
+        };
+        if(event.target.files[0]) { reader.readAsDataURL(event.target.files[0]); }
+    }
+</script>
+{% endblock %}

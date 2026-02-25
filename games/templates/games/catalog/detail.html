@@ -1,0 +1,168 @@
+{% extends 'games/base.html' %}
+{% load game_filters %}
+
+{% block title %}{{ game.name }} - GameBox{% endblock %}
+
+{% block content %}
+<div class="relative w-full h-64 md:h-96 overflow-hidden bg-black">
+    {% if game.cover %}
+        <img src="https:{{ game.cover.url }}" class="absolute inset-0 w-full h-full object-cover opacity-20 blur-xl scale-110">
+    {% endif %}
+    <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent"></div>
+</div>
+
+<div class="max-w-7xl mx-auto px-6 -mt-32 md:-mt-48 relative z-10 pb-20">
+    
+    <div class="flex flex-col md:flex-row gap-8 mb-12 items-center md:items-end">
+        <div class="w-48 md:w-64 flex-shrink-0">
+            <div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.8)] border border-white/10 relative group">
+                {% if game.cover %}
+                    <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                {% else %}
+                    <div class="w-full h-full bg-zinc-900 flex items-center justify-center">
+                        <i class="fas fa-gamepad text-4xl text-white/10"></i>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col justify-end w-full">
+            
+            <div class="flex flex-wrap gap-2 mb-4 justify-center md:justify-start">
+                {% for genre in game.genres %}
+                    <span class="px-2.5 py-1 bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-wider rounded-md border border-white/5">
+                        {{ genre.name }}
+                    </span>
+                {% endfor %}
+            </div>
+
+            <h1 class="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight text-center md:text-left leading-tight">
+                {{ game.name }}
+            </h1>
+
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <button class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-xl text-sm font-bold text-white transition flex items-center gap-2">
+                    <i class="fas fa-play text-blue-400"></i> Jugando
+                </button>
+                <button class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-xl text-sm font-bold text-white transition flex items-center gap-2">
+                    <i class="fas fa-star text-yellow-400"></i> Completado
+                </button>
+                <button class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-xl text-sm font-bold text-white transition flex items-center gap-2">
+                    <i class="fas fa-clock text-purple-400"></i> Backlog
+                </button>
+                <button class="w-10 h-10 bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-xl text-white flex items-center justify-center transition">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        
+        <div class="md:col-span-2 space-y-12">
+            
+            <div>
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+                    <span class="w-1 h-6 bg-indigo-500 rounded-full"></span> Sinopsis
+                </h2>
+                <p class="text-gray-400 leading-relaxed text-sm md:text-base text-justify">
+                    {% if game.summary %}
+                        {{ game.summary }}
+                    {% else %}
+                        No hay descripción disponible para este juego todavía en la base de datos de IGDB.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-3">
+                    <span class="w-1 h-6 bg-purple-500 rounded-full"></span> Tu Diario
+                </h2>
+                
+                <div class="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 shadow-lg">
+                    <form method="post" action="#">
+                        {% csrf_token %}
+                        <textarea name="review" rows="4" placeholder="¿Qué te pareció este juego? Escribe tu reseña..." class="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 transition resize-none"></textarea>
+                        
+                        <div class="flex justify-between items-center mt-4">
+                            <div class="flex items-center gap-2 text-gray-400">
+                                <i class="fas fa-star text-yellow-500/50 hover:text-yellow-500 cursor-pointer transition text-2xl"></i>
+                                <span class="text-xs font-bold uppercase tracking-wider ml-2">Puntuar</span>
+                            </div>
+                            <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-500/20">
+                                Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="space-y-8">
+            
+            <div class="bg-zinc-900/50 p-6 rounded-2xl border border-white/5 shadow-lg">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Información</h3>
+                
+                <div class="space-y-3">
+                    
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-sm text-gray-400">Lanzamiento</span>
+                        <span class="text-sm font-bold text-white">
+                            {% if game.first_release_date %}
+                                {{ game.first_release_date|unix_to_date }}
+                            {% else %}
+                                TBA
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center py-2 border-b border-white/5">
+                        <span class="text-sm text-gray-400">Rating IGDB</span>
+                        <span class="text-sm font-black {% if game.total_rating >= 80 %}text-green-400{% elif game.total_rating >= 60 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                            {% if game.total_rating %}
+                                {{ game.total_rating|floatformat:0 }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div>
+                        <span class="block text-sm text-gray-400 mb-2 mt-2">Plataformas</span>
+                        <div class="flex flex-wrap gap-2">
+                            {% for platform in game.platforms %}
+                                <span class="px-2 py-1 bg-black/50 border border-white/10 rounded-md text-[11px] font-bold text-gray-300">
+                                    {{ platform.name }}
+                                </span>
+                            {% empty %}
+                                <span class="text-sm text-gray-500">Desconocidas</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Quizás te guste...</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    {% for similar in game.similar_games|slice:":4" %}
+                        {% if similar.cover %}
+                        <a href="{% url 'detail' similar.id %}" class="aspect-[3/4] rounded-xl overflow-hidden group border border-white/5 relative shadow-lg">
+                            <img src="https:{{ similar.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition flex items-end p-3">
+                                <span class="text-xs font-bold text-white truncate">{{ similar.name }}</span>
+                            </div>
+                        </a>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-xs text-gray-600 col-span-2">No hay recomendaciones disponibles de momento.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

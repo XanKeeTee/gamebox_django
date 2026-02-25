@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .services import IGDBService
@@ -9,6 +11,7 @@ from django.db.models import Q, Count
 from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notification
 from django.http import HttpResponseNotFound, JsonResponse
 from django.views.decorators.cache import cache_page
+from django.contrib import messages
 
 @cache_page(60 * 15)
 def index(request):
@@ -33,7 +36,7 @@ def index(request):
             .prefetch_related('comments__user__profile', 'likes') \
             .order_by('-updated_at')[:20]
 
-    return render(request, 'games/index.html', {
+    return render(request, 'games/home/index.html', {
         'hero_game': trending_games[0] if trending_games else None,
         'trending_games': trending_games[1:],
         'upcoming': upcoming_games,
@@ -79,7 +82,7 @@ def detail(request, game_id):
 
     return render(
         request,
-        "games/detail.html",
+        "games/catalog/detail.html",
         {
             "game": game,
             "user_game_status": user_game_status,
@@ -127,51 +130,44 @@ def add_to_library(request, game_id, status):
     return redirect("detail", game_id=game_id)
 
 
-@login_required(login_url="login")
+@login_required
 def profile(request):
-    my_games = (
-        UserGame.objects.filter(user=request.user)
-        .select_related("game")
-        .order_by("-updated_at")
-    )
-    my_lists = request.user.lists.all().order_by("-created_at")
+    """Perfil privado con estadísticas y juegos reales"""
+    user = request.user
 
-    status_counts = my_games.values("status").annotate(total=Count("status"))
+    # 1. Recuperamos las listas de juegos del usuario
+    # Filtramos por el usuario actual y el estado correspondiente
+    favorite_games = UserGame.objects.filter(user=user, is_favorite=True).select_related('game')
+    backlog_games = UserGame.objects.filter(user=user, status='backlog').select_related('game')[:6]
+    completed_games = UserGame.objects.filter(user=user, status='completed').select_related('game')[:6]
 
-    status_data = {"playing": 0, "completed": 0, "backlog": 0, "dropped": 0}
-    for item in status_counts:
-        if item["status"] in status_data:
-            status_data[item["status"]] = item["total"]
+    # 2. Datos para el gráfico de Distribución (Donut)
+    # Contamos cuántos juegos hay en cada estado
+    count_playing = UserGame.objects.filter(user=user, status='playing').count()
+    count_completed = UserGame.objects.filter(user=user, status='completed').count()
+    count_backlog = UserGame.objects.filter(user=user, status='backlog').count()
+    count_dropped = UserGame.objects.filter(user=user, status='dropped').count()
+    
+    dist_data = [count_playing, count_completed, count_backlog, count_dropped]
 
-    ratings_distribution = [0, 0, 0, 0, 0]
-    rated_games = my_games.filter(rating__isnull=False)
-
-    for game in rated_games:
-        score = game.rating
-        if score <= 20:
-            ratings_distribution[0] += 1
-        elif score <= 40:
-            ratings_distribution[1] += 1
-        elif score <= 60:
-            ratings_distribution[2] += 1
-        elif score <= 80:
-            ratings_distribution[3] += 1
-        else:
-            ratings_distribution[4] += 1
+    # 3. Datos para el gráfico de Puntuaciones (Barras)
+    # Contamos cuántas veces ha puesto cada nota (del 1 al 5)
+    ratings = []
+    for i in range(1, 6):
+        count = UserGame.objects.filter(user=user, rating=i).count()
+        ratings.append(count)
 
     context = {
-        "playing": my_games.filter(status="playing"),
-        "backlog": my_games.filter(status="backlog"),
-        "completed": my_games.filter(status="completed"),
-        "favorites": my_games.filter(is_favorite=True),
-        "reviews": my_games.exclude(review__exact="").exclude(review__isnull=True),
-        "lists": my_lists,
-        "total_count": my_games.count(),
-        "fav_count": my_games.filter(is_favorite=True).count(),
-        "status_data": status_data,
-        "ratings_distribution": ratings_distribution,
+        'favorite_games': favorite_games,
+        'backlog_games': backlog_games,
+        'completed_games': completed_games,
+        'total_count': UserGame.objects.filter(user=user).count(),
+        'dist_data': json.dumps(dist_data),
+        'rating_data': json.dumps(ratings),
+        'rating_labels': json.dumps(['1★', '2★', '3★', '4★', '5★']),
     }
-    return render(request, "games/profile.html", context)
+    
+    return render(request, 'games/profile/profile.html', context)
 
 
 def search(request):
@@ -189,7 +185,7 @@ def search(request):
                 )
 
     return render(
-        request, "games/search_results.html", {"games": games, "query": query}
+        request, "games/catalog/search_results.html", {"games": games, "query": query}
     )
 
 
@@ -221,28 +217,33 @@ def update_review(request, game_id):
     return redirect("detail", game_id=game_id)
 
 
-@login_required(login_url="/admin/login/")
+@login_required
 def edit_profile(request):
-    if not hasattr(request.user, "profile"):
-        Profile.objects.create(user=request.user)
+    """Página para editar el perfil (avatar, bio, etc.)"""
+    user = request.user
+    
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.email = request.POST.get('email', user.email)
+        user.save()
+        
+        profile = user.profile 
+        
+        if 'bio' in request.POST:
+            profile.bio = request.POST.get('bio')
+            
+        if 'avatar' in request.FILES:
+            profile.avatar = request.FILES['avatar']
+        
+        if 'banner' in request.FILES:
+            profile.banner = request.FILES['banner']
 
-    if request.method == "POST":
-        u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(
-            request.POST, request.FILES, instance=request.user.profile
-        )
+        profile.save()
+        
+        messages.success(request, "¡Tu perfil se ha actualizado correctamente!")
+        return redirect('profile') 
 
-        if u_form.is_valid() and p_form.is_valid():
-            u_form.save()
-            p_form.save()
-            return redirect("profile")
-    else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
-
-    context = {"u_form": u_form, "p_form": p_form}
-    return render(request, "games/edit_profile.html", context)
-
+    return render(request, 'games/profile/edit_profile.html')
 
 def register(request):
     if request.method == "POST":
@@ -294,7 +295,7 @@ def public_profile(request, username):
         "followers_count": profile_user.profile.followed_by.count(),
         "following_count": profile_user.profile.follows.count(),
     }
-    return render(request, "games/public_profile.html", context)
+    return render(request, "games/profile/public_profile.html", context)
 
 
 @login_required(login_url="login")
@@ -328,7 +329,7 @@ def community(request):
 
     return render(
         request,
-        "games/community.html",
+        "games/community/community.html",
         {"popular_users": popular_users, "recent_reviews": recent_reviews},
     )
 
@@ -367,12 +368,12 @@ def create_list(request):
             return redirect("profile")
     else:
         form = GameListForm()
-    return render(request, "games/create_list.html", {"form": form})
+    return render(request, "games/lists/create_list.html", {"form": form})
 
 
 def list_detail(request, username, slug):
     game_list = get_object_or_404(GameList, user__username=username, slug=slug)
-    return render(request, "games/list_detail.html", {"game_list": game_list})
+    return render(request, "games/lists/list_detail.html", {"game_list": game_list})
 
 
 @login_required(login_url="login")
@@ -417,7 +418,7 @@ def add_to_list_view(request, game_id):
 
     my_lists = GameList.objects.filter(user=request.user)
     return render(
-        request, "games/add_to_list.html", {"game": game, "my_lists": my_lists}
+        request, "games/lists/add_to_list.html", {"game": game, "my_lists": my_lists}
     )
 
 
@@ -465,7 +466,7 @@ def notifications_view(request):
     unseen = notifs.filter(is_seen=False)
     unseen.update(is_seen=True)
 
-    return render(request, "games/notifications.html", {"notifs": notifs})
+    return render(request, "games/community/notifications.html", {"notifs": notifs})
 
 
 def releases(request):
@@ -478,7 +479,7 @@ def releases(request):
                 "t_thumb", "t_cover_big"
             )
 
-    return render(request, "games/releases.html", {"games": upcoming_games})
+    return render(request, "games/home/releases.html", {"games": upcoming_games})
 
 def category(request, genre_id):
     service = IGDBService()
@@ -495,7 +496,7 @@ def category(request, genre_id):
     }
     title = genre_names.get(genre_id, "Juegos")
     
-    return render(request, 'games/category.html', {'games': games, 'title': title})
+    return render(request, 'games/home/category.html', {'games': games, 'title': title})
 
 def advanced_search(request):
     platform = request.GET.get('platform')
@@ -511,7 +512,7 @@ def advanced_search(request):
         service = IGDBService()
         games = service.advanced_search(platform, genre, year, min_rating)
         
-    return render(request, 'games/advanced_search.html', {
+    return render(request, 'games/catalog/advanced_search.html', {
         'games': games,
         'selected_platform': platform,
         'selected_genre': genre,
