@@ -1,164 +1,161 @@
 {% extends 'games/base.html' %}
+
 {% block title %}Comunidad - GameBox{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 md:px-6 pt-10 pb-20">
+<div class="relative w-full h-48 bg-zinc-900 overflow-hidden rounded-3xl mb-8 border border-white/5 shadow-xl">
+    <div class="absolute inset-0 bg-gradient-to-r from-indigo-900 via-purple-900 to-zinc-900 opacity-40"></div>
+    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+    <div class="absolute inset-0 flex flex-col justify-center px-10 z-10">
+        <h1 class="text-4xl font-black text-white tracking-tighter mb-2">Comunidad</h1>
+        <p class="text-gray-400 max-w-xl">Descubre a otros jugadores, mira a qué están jugando y comparte tus reseñas. El ecosistema gaming definitivo.</p>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
     
-    <div class="mb-16">
-        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-            <span class="text-yellow-500">🏆</span> Miembros Destacados
+    <div class="lg:col-span-2 space-y-6">
+        <h2 class="text-xl font-black text-white flex items-center gap-2 mb-6">
+            <i class="fas fa-stream text-indigo-500"></i> Actividad Reciente
         </h2>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {% for u in popular_users %}
-            <div class="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl flex flex-col items-center text-center hover:bg-zinc-900 transition group relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
-                
-                <a href="{% url 'public_profile' u.username %}" class="relative z-10 block w-full">
-                    <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-white/10 mb-3 mx-auto group-hover:scale-110 transition duration-300">
-                        {% if u.profile.avatar %}
-                            <img src="{{ u.profile.avatar.url }}" class="w-full h-full object-cover">
-                        {% else %}
-                            <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl font-bold">{{ u.username|slice:":1" }}</div>
-                        {% endif %}
-                    </div>
-                    <h3 class="font-bold text-white group-hover:text-indigo-400 transition">{{ u.username }}</h3>
-                    <p id="followers-count-{{ u.username }}" class="text-xs text-gray-500 font-bold mt-1">{{ u.profile.followed_by.count }} Seguidores</p>
-                </a>
-                
-                {% if user.is_authenticated and user != u %}
-                    <button type="button" 
-                        onclick="toggleFollowFromCard(this, '{{ u.username }}')" 
-                        class="relative z-20 mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full cursor-pointer border 
-                        {% if user.profile in u.profile.followed_by.all %} 
-                            bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500 
-                        {% else %} 
-                            border-transparent bg-white text-black hover:bg-gray-200 
-                        {% endif %}">
-                        {% if user.profile in u.profile.followed_by.all %}
-                            Dejar de seguir
-                        {% else %}
-                            + Seguir
-                        {% endif %}
-                    </button>
-                {% endif %}
+        <div class="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-6 shadow-lg">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+                    A
+                </div>
+                <div>
+                    <h3 class="text-white font-bold text-sm">admin <span class="text-gray-500 font-normal">completó un juego</span></h3>
+                    <p class="text-xs text-gray-500">Hace 2 horas</p>
+                </div>
             </div>
-            {% endfor %}
+            <div class="flex gap-4 bg-black/30 p-4 rounded-xl border border-white/5">
+                <div class="w-16 h-24 bg-zinc-800 rounded flex-shrink-0 overflow-hidden">
+                    <i class="fas fa-gamepad text-gray-600 w-full h-full flex items-center justify-center"></i>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold">Vampire Survivors</h4>
+                    <div class="flex text-yellow-500 text-xs my-1">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-sm text-gray-400 italic">"Una locura adictiva. No podía parar de jugar."</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="border border-dashed border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center text-center">
+            <i class="fas fa-users text-4xl text-zinc-700 mb-4"></i>
+            <p class="text-zinc-500 font-bold">Sigue a más jugadores para llenar tu feed de actividad.</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div class="lg:col-span-8">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-                <span class="text-blue-400">🌍</span> Reseñas Recientes
-            </h2>
-
-            <div class="space-y-6">
-                {% for item in recent_reviews %}
-                <div class="bg-zinc-900/30 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition">
-                    <div class="flex gap-4">
-                        <a href="{% url 'detail' item.game.igdb_id %}" class="shrink-0 w-20 h-28 rounded-xl overflow-hidden shadow-lg border border-white/5">
-                            <img src="https:{{ item.game.cover_url }}" class="w-full h-full object-cover">
-                        </a>
-                        
-                        <div class="flex-1">
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="font-bold text-lg leading-tight">
-                                        <a href="{% url 'detail' item.game.igdb_id %}" class="hover:text-indigo-400 transition">{{ item.game.name }}</a>
-                                    </h3>
-                                    <div class="flex items-center gap-2 text-sm mt-1">
-                                        <span class="text-gray-500">por</span>
-                                        <a href="{% url 'public_profile' item.user.username %}" class="flex items-center gap-2 font-bold hover:text-white text-gray-300">
-                                            <div class="w-5 h-5 rounded-full overflow-hidden bg-zinc-800">
-                                                {% if item.user.profile.avatar %}
-                                                    <img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">
-                                                {% else %}
-                                                    <div class="w-full h-full bg-indigo-500"></div>
-                                                {% endif %}
-                                            </div>
-                                            {{ item.user.username }}
-                                        </a>
-                                    </div>
+    <div class="space-y-6">
+        <h2 class="text-xl font-black text-white flex items-center gap-2 mb-6">
+            <i class="fas fa-compass text-purple-500"></i> Descubre Jugadores
+        </h2>
+        
+        <div class="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-4 shadow-lg flex flex-col gap-4">
+            
+            {% for miembro in usuarios_comunidad %}
+                {% if miembro != request.user %}
+                <div class="flex items-center justify-between group">
+                    <a href="{% url 'public_profile' miembro.username %}" class="flex items-center gap-3 hover:opacity-80 transition">
+                        <div class="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-zinc-800 flex-shrink-0">
+                            {% if miembro.profile.avatar %}
+                                <img src="{{ miembro.profile.avatar.url }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-white font-bold bg-indigo-600 uppercase">
+                                    {{ miembro.username|slice:":1" }}
                                 </div>
-                                {% if item.rating %}
-                                    <div class="text-yellow-500 font-black text-xl">{{ item.rating }}</div>
-                                {% endif %}
-                            </div>
-
-                            <p class="text-gray-300 text-sm italic mb-4">"{{ item.review }}"</p>
-
-                            <div class="flex items-center gap-4 border-t border-white/5 pt-3">
-                                <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold cursor-pointer transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
-                                    <span class="like-count">{{ item.likes.count }}</span> Likes
-                                </button>
-                                <span class="text-xs text-gray-600">{{ item.updated_at|timesince }} ago</span>
-                            </div>
+                            {% endif %}
                         </div>
-                    </div>
+                        <div class="overflow-hidden">
+                            <h3 class="text-white font-bold text-sm truncate">{{ miembro.username }}</h3>
+                            <p class="text-xs text-gray-500 truncate">{{ miembro.profile.followed_by.count }} seguidores</p>
+                        </div>
+                    </a>
+
+                    {% if user.is_authenticated %}
+                        <button id="follow-btn-{{ miembro.username }}" 
+                                onclick="toggleFollowComunidad('{{ miembro.username }}')" 
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0
+                                {% if miembro.profile in request.user.profile.follows.all %}
+                                    bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10
+                                {% else %}
+                                    bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg
+                                {% endif %}">
+                            
+                            {% if miembro.profile in request.user.profile.follows.all %}
+                                <i class="fas fa-check" id="follow-icon-{{ miembro.username }}"></i> 
+                                <span id="follow-text-{{ miembro.username }}" class="hidden sm:inline">Siguiendo</span>
+                            {% else %}
+                                <i class="fas fa-user-plus" id="follow-icon-{{ miembro.username }}"></i> 
+                                <span id="follow-text-{{ miembro.username }}" class="hidden sm:inline">Seguir</span>
+                            {% endif %}
+                        </button>
+                    {% endif %}
                 </div>
-                {% endfor %}
-            </div>
+                {% endif %}
+            {% empty %}
+                <div class="text-center py-6 text-gray-500 text-sm">
+                    No hay otros usuarios todavía. ¡Invita a tus amigos!
+                </div>
+            {% endfor %}
+            
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+{% if user.is_authenticated %}
 <script>
-    // Función de Like
-    function toggleLike(btn, id) {
-        fetch(`/review/${id}/like/`)
-        .then(r => {
-            if (r.redirected) { window.location.href = r.url; return null; }
-            return r.json();
+    function toggleFollowComunidad(username) {
+        // Seleccionamos los elementos específicos del usuario que hemos clicado
+        const btn = document.getElementById('follow-btn-' + username);
+        const text = document.getElementById('follow-text-' + username);
+        const icon = document.getElementById('follow-icon-' + username);
+        
+        // Bloqueo temporal para evitar spam de clics
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        fetch(`/follow/${username}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Error en la petición de red');
+            return response.json();
         })
         .then(data => {
-            if (!data) return;
-            btn.querySelector('.like-count').innerText = data.count;
-            const svg = btn.querySelector('svg');
-            if(data.liked) {
-                btn.classList.remove('text-gray-500', 'hover:text-pink-400');
-                btn.classList.add('text-pink-500');
-                svg.setAttribute('fill', 'currentColor');
-            } else {
-                btn.classList.remove('text-pink-500');
-                btn.classList.add('text-gray-500', 'hover:text-pink-400');
-                svg.setAttribute('fill', 'none');
+            if (data.error) {
+                alert(data.error);
+                return;
             }
+
+            // Cambiamos clases y textos SOLO de este botón
+            if (data.is_following) {
+                btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 bg-zinc-800 hover:bg-zinc-700 text-white border border-white/10";
+                icon.className = "fas fa-check";
+                text.innerText = "Siguiendo";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg";
+                icon.className = "fas fa-user-plus";
+                text.innerText = "Seguir";
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Hubo un problema de conexión.");
+        })
+        .finally(() => {
+            // Desbloqueamos el botón
+            btn.disabled = false;
+            btn.style.opacity = '1';
         });
     }
-
-    // Función de Seguir
-    function toggleFollowFromCard(btn, username) {
-        fetch(`/u/${username}/follow/`)
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                    return null;
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data) return;
-
-                // Actualizar estilo del botón
-                if (data.following) {
-                    btn.innerText = "Dejar de seguir";
-                    btn.className = "relative z-20 mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full cursor-pointer border bg-transparent border-white/20 text-gray-300 hover:border-red-500 hover:text-red-500";
-                } else {
-                    btn.innerText = "+ Seguir";
-                    btn.className = "relative z-20 mt-4 px-4 py-1.5 rounded-full text-xs font-bold transition w-full cursor-pointer border border-transparent bg-white text-black hover:bg-gray-200";
-                }
-
-                // Actualizar el número de seguidores bajo el nombre
-                const countText = document.getElementById(`followers-count-${username}`);
-                if (countText) {
-                    countText.innerText = data.followers_count + " Seguidores";
-                }
-            })
-            .catch(error => console.error("Error:", error));
-    }
 </script>
+{% endif %}
 {% endblock %}

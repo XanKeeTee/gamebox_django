@@ -14,6 +14,7 @@ from django.views.decorators.cache import cache_page
 from django.contrib import messages
 from .forms import GameListForm 
 from .forms import GameListForm
+from django.utils.text import slugify
 
 @cache_page(60 * 15)
 def index(request):
@@ -47,52 +48,36 @@ def index(request):
 
 
 def detail(request, game_id):
-    service = IGDBService()
-    game = service.get_game_detail(game_id)
+    """
+    Carga la ficha de un juego usando IGDBService y comprueba su estado local.
+    """
+    igdb = IGDBService()
+    
+    game = igdb.get_game_detail(game_id) 
+    
+    if not game:
+        from django.http import Http404
+        raise Http404("El juego no existe en la base de datos de IGDB")
 
-    if game:
-        if "cover" in game:
-            game["cover"]["url"] = game["cover"]["url"].replace(
-                "t_thumb", "t_cover_big"
-            )
-        if "screenshots" in game:
-            for screen in game["screenshots"]:
-                screen["url"] = screen["url"].replace("t_thumb", "t_screenshot_huge")
+    user_status = None
+    user_review = ""
 
-    user_game = None
-    user_game_status = None
+    if request.user.is_authenticated:
+        interaccion = UserGame.objects.filter(
+            user=request.user, 
+            game__igdb_id=game_id
+        ).first()
 
-    community_reviews = []
+        if interaccion:
+            user_status = interaccion.status
+            user_review = interaccion.review
 
-    local_game = Game.objects.filter(igdb_id=game_id).first()
-
-    if local_game:
-        if request.user.is_authenticated:
-            user_game = UserGame.objects.filter(
-                user=request.user, game=local_game
-            ).first()
-            if user_game:
-                user_game_status = user_game.status
-
-        community_reviews = (
-            UserGame.objects.filter(game=local_game)
-            .exclude(review__exact="")
-            .exclude(review__isnull=True)
-            .select_related("user__profile")
-            .order_by("-updated_at")
-        )
-
-    return render(
-        request,
-        "games/catalog/detail.html",
-        {
-            "game": game,
-            "user_game_status": user_game_status,
-            "user_game": user_game,
-            "community_reviews": community_reviews,
-        },
-    )
-
+    context = {
+        'game': game,
+        'user_status': user_status,
+        'user_review': user_review,
+    }
+    return render(request, 'games/catalog/detail.html', context)
 
 @login_required(login_url="/admin/login/")
 def add_to_library(request, game_id, status):
@@ -270,6 +255,7 @@ def public_profile(request, username):
     completed = my_games.filter(status="completed")
     favorites = my_games.filter(is_favorite=True)
     reviews = my_games.exclude(review__exact="").exclude(review__isnull=True)
+    usuario_visitado = get_object_or_404(User, username=username)
 
     # Comprobar si TÚ (el que mira) ya sigues a este usuario
     is_following = False
@@ -281,6 +267,7 @@ def public_profile(request, username):
         "profile_user": profile_user,
         "playing": my_games.filter(status="playing"),
         "backlog": my_games.filter(status="backlog"),
+        'target_user': usuario_visitado,
         "completed": my_games.filter(status="completed"),
         "favorites": my_games.filter(is_favorite=True),
         "reviews": my_games.exclude(review__exact="").exclude(review__isnull=True),
@@ -294,25 +281,22 @@ def public_profile(request, username):
     return render(request, "games/profile/public_profile.html", context)
 
 def community(request):
-    popular_users = User.objects.annotate(
-        num_followers=Count("profile__followed_by")
-    ).order_by("-num_followers")[
-        :6
-    ]
+    """
+    Vista de la página de Comunidad.
+    Carga el feed de actividad y los usuarios recomendados para seguir.
+    """
+    if request.user.is_authenticated:
+        usuarios_sugeridos = User.objects.exclude(id=request.user.id).order_by('-date_joined')[:10]
+    else:
+        usuarios_sugeridos = User.objects.all().order_by('-date_joined')[:10]
+    actividad_reciente = [] 
 
-    recent_reviews = (
-        UserGame.objects.exclude(review="")
-        .exclude(review__isnull=True)
-        .select_related("user__profile", "game")
-        .prefetch_related("likes", "comments")
-        .order_by("-updated_at")[:20]
-    )
-
-    return render(
-        request,
-        "games/community/community.html",
-        {"popular_users": popular_users, "recent_reviews": recent_reviews},
-    )
+    context = {
+        'usuarios_comunidad': usuarios_sugeridos,
+        'actividades': actividad_reciente,
+    }
+    
+    return render(request, 'games/community/community.html', context)
 
 @login_required(login_url="login")
 def add_comment(request, review_id):
@@ -506,3 +490,90 @@ def create_list(request):
         form = GameListForm()
     
     return render(request, 'games/create_list.html', {'form': form})
+
+@login_required
+def toggle_follow(request, username):
+    """Vista asíncrona para seguir/dejar de seguir a un usuario"""
+    if request.method == "POST":
+        # Buscamos al usuario al que queremos seguir
+        target_user = get_object_or_404(User, username=username)
+        
+        # No puedes seguirte a ti mismo
+        if request.user == target_user:
+            return JsonResponse({"error": "No puedes seguirte a ti mismo"}, status=400)
+
+        mi_perfil = request.user.profile
+        perfil_destino = target_user.profile
+
+        if perfil_destino in mi_perfil.follows.all():
+            mi_perfil.follows.remove(perfil_destino)
+            is_following = False
+        else:
+            mi_perfil.follows.add(perfil_destino)
+            is_following = True
+
+        return JsonResponse({
+            "is_following": is_following,
+            "follower_count": perfil_destino.followed_by.count()
+        })
+        
+    return JsonResponse({"error": "Método no permitido"}, status=400)
+
+@login_required
+def update_game_status(request, game_id):
+    """Vista asíncrona para los botones de estado (Jugando, Completado, Backlog)"""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        nuevo_estado = data.get('status')
+        nombre_juego = data.get('name', 'Juego Desconocido')
+        portada_url = data.get('cover_url', '')
+
+        # Generamos un slug válido y único (ej: "gta-v-45131")
+        slug_generado = slugify(f"{nombre_juego}-{game_id}")
+
+        # Usamos exactamente TUS nombres de campos: igdb_id, name, cover_url y el slug
+        juego, _ = Game.objects.get_or_create(
+            igdb_id=game_id, 
+            defaults={
+                'name': nombre_juego, 
+                'cover_url': portada_url,
+                'slug': slug_generado
+            }
+        )
+
+        # Buscamos o creamos la interacción
+        interaccion, _ = UserGame.objects.get_or_create(user=request.user, game=juego)
+        interaccion.status = nuevo_estado
+        interaccion.save()
+
+        return JsonResponse({'success': True, 'status': nuevo_estado})
+    return JsonResponse({'error': 'Método no permitido'}, status=400)
+
+
+@login_required
+def save_game_review(request, game_id):
+    """Vista tradicional para guardar la reseña escrita en el Diario"""
+    if request.method == 'POST':
+        texto_resena = request.POST.get('review', '')
+        nombre_juego = request.POST.get('game_name', 'Juego Desconocido')
+        portada_url = request.POST.get('game_cover', '')
+
+        # Generamos el slug también aquí
+        slug_generado = slugify(f"{nombre_juego}-{game_id}")
+
+        # Misma estructura con TUS campos exactos
+        juego, _ = Game.objects.get_or_create(
+            igdb_id=game_id, 
+            defaults={
+                'name': nombre_juego, 
+                'cover_url': portada_url,
+                'slug': slug_generado
+            }
+        )
+
+        interaccion, _ = UserGame.objects.get_or_create(user=request.user, game=juego)
+        interaccion.review = texto_resena
+        interaccion.save()
+
+        # Recargamos la página del juego para ver la reseña
+        return redirect('detail', game_id=game_id)

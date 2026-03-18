@@ -16,29 +16,19 @@ class Game(models.Model):
     
     @property
     def embed_link(self):
-        """
-        Transforma cualquier enlace de YouTube (normal o corto) en un enlace 'embed' válido.
-        Elimina parámetros extra como &t= o &feature=.
-        """
         if not self.url:
             return ""
-            
-        # Si la URL tiene 'v=', coge lo que hay justo después hasta el próximo '&'
         if 'v=' in self.url:
             try:
                 return 'https://www.youtube.com/embed/' + self.url.split('v=')[1].split('&')[0]
             except IndexError:
-                return self.url  # Si falla el split, devuelve la original por seguridad
-        
-        # Si es un enlace corto tipo youtu.be/CODIGO
+                return self.url
         elif 'youtu.be' in self.url:
             try:
                 return 'https://www.youtube.com/embed/' + self.url.split('/')[-1].split('?')[0]
             except IndexError:
                 return self.url
-
         return self.url
-
 
 class UserGame(models.Model):
     STATUS_CHOICES = [
@@ -54,8 +44,6 @@ class UserGame(models.Model):
     review = models.TextField(blank=True, null=True)
     is_favorite = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Likes a la reseña
     likes = models.ManyToManyField(User, related_name="liked_reviews", blank=True)
 
     def total_likes(self):
@@ -64,22 +52,16 @@ class UserGame(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.game.name}"
 
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
     banner = models.ImageField(upload_to="banners/", null=True, blank=True)
-
-    follows = models.ManyToManyField(
-        "self", related_name="followed_by", symmetrical=False, blank=True
-    )
-
+    follows = models.ManyToManyField("self", related_name="followed_by", symmetrical=False, blank=True)
     def __str__(self):
         return f"{self.user.username} Profile"
 
-# Señales para crear perfil automáticamente al crear usuario
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
@@ -89,7 +71,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
-
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     user_game = models.ForeignKey(
@@ -98,17 +79,12 @@ class Comment(models.Model):
     text = models.TextField(max_length=300)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Comentario de {self.user.username}"
-
-
 class GameList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lists")
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     slug = models.SlugField(blank=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
     likes = models.ManyToManyField(User, related_name="liked_lists", blank=True)
 
     def save(self, *args, **kwargs):
@@ -122,14 +98,8 @@ class GameList(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.name
-
-
 class ListEntry(models.Model):
-    game_list = models.ForeignKey(
-        GameList, on_delete=models.CASCADE, related_name="entries"
-    )
+    game_list = models.ForeignKey(GameList, on_delete=models.CASCADE, related_name="entries")
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     order = models.PositiveIntegerField(default=0)
     comment = models.TextField(blank=True, null=True)
@@ -137,17 +107,12 @@ class ListEntry(models.Model):
     class Meta:
         ordering = ["order"]
 
-
 class Badge(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
     slug = models.SlugField(unique=True)
     icon_name = models.CharField(max_length=50, default="star")
     color = models.CharField(max_length=20, default="yellow")
-
-    def __str__(self):
-        return self.name
-
 
 class UserBadge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
@@ -157,26 +122,16 @@ class UserBadge(models.Model):
     class Meta:
         unique_together = ("user", "badge")
 
-
 class Notification(models.Model):
     TYPE_CHOICES = (
         ("like", "Me Gusta"),
         ("comment", "Comentario"),
         ("follow", "Nuevo Seguidor"),
     )
-
-    sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_notifications"
-    )
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="notifications"
-    )
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_notifications")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     text_preview = models.CharField(max_length=100, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     is_seen = models.BooleanField(default=False)
-
     target_object_id = models.IntegerField(null=True, blank=True)
-
-    def __str__(self):
-        return f"{self.sender} -> {self.user} ({self.notification_type})"
