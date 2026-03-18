@@ -19,28 +19,93 @@
             <i class="fas fa-stream text-indigo-500"></i> Actividad Reciente
         </h2>
         
-        <div class="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-6 shadow-lg">
-            <div class="flex items-center gap-4 mb-4">
-                <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
-                    A
-                </div>
-                <div>
-                    <h3 class="text-white font-bold text-sm">admin <span class="text-gray-500 font-normal">completó un juego</span></h3>
-                    <p class="text-xs text-gray-500">Hace 2 horas</p>
-                </div>
-            </div>
-            <div class="flex gap-4 bg-black/30 p-4 rounded-xl border border-white/5">
-                <div class="w-16 h-24 bg-zinc-800 rounded flex-shrink-0 overflow-hidden">
-                    <i class="fas fa-gamepad text-gray-600 w-full h-full flex items-center justify-center"></i>
-                </div>
-                <div>
-                    <h4 class="text-white font-bold">Vampire Survivors</h4>
-                    <div class="flex text-yellow-500 text-xs my-1">
-                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+        <div class="space-y-6">
+            {% for item in actividades %}
+            <div class="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 hover:border-white/10 transition mb-6">
+                
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'public_profile' item.user.username %}" class="w-10 h-10 rounded-full overflow-hidden border border-white/10">
+                            {% if item.user.profile.avatar %}
+                                <img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">{{ item.user.username|slice:":1" }}</div>
+                            {% endif %}
+                        </a>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'public_profile' item.user.username %}" class="font-bold hover:text-indigo-400 transition">{{ item.user.username }}</a>
+                                <span class="text-gray-500 text-sm">
+                                    {% if item.status == 'completed' %} completó {% elif item.status == 'playing' %} empezó {% else %} actualizó {% endif %}
+                                </span>
+                            </div>
+                            <span class="text-xs text-gray-600">{{ item.created_at|timesince }} ago</span>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-400 italic">"Una locura adictiva. No podía parar de jugar."</p>
+
+                    {% if item.rating %}
+                    <div class="flex flex-col items-end">
+                        <div class="text-yellow-500 font-black text-xl leading-none">{{ item.rating }}<span class="text-[10px] text-gray-500 ml-0.5">/10</span></div>
+                        <div class="flex text-yellow-500 text-[8px] mt-1">
+                            {% for i in "x"|rjust:item.rating %}<i class="fas fa-star"></i>{% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
+                
+                <div class="flex gap-4">
+                    <a href="{% url 'detail' item.game.igdb_id %}" class="shrink-0 w-20 h-28 rounded-lg overflow-hidden shadow-lg border border-white/5 hover:scale-105 transition">
+                        <img src="{{ item.game.cover_url }}" class="w-full h-full object-cover">
+                    </a>
+                    
+                    <div class="flex-1">
+                        <a href="{% url 'detail' item.game.igdb_id %}" class="text-lg font-black leading-tight hover:text-indigo-400 transition block mb-2">{{ item.game.name }}</a>
+                        
+                        {% if item.review %}
+                            <p class="text-gray-300 text-sm italic border-l-2 border-indigo-500 pl-3 py-1 bg-white/5 rounded-r-lg">
+                                "{{ item.review }}"
+                            </p>
+                        {% endif %}
+                        
+                        <div class="flex items-center gap-6 mt-4 pt-3 border-t border-white/5">
+                            <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+                                <span class="like-count">{{ item.total_likes }}</span>
+                            </button>
+                            
+                            <button class="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-400 transition" onclick="document.getElementById('comment-box-com-{{ item.id }}').classList.toggle('hidden')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                <span>{{ item.comments.count }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="comment-box-com-{{ item.id }}" class="hidden mt-4 pt-4 border-t border-white/5 bg-black/20 rounded-xl p-4">
+                    {% if item.comments.all %}
+                        <div class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar">
+                            {% for comment in item.comments.all %}
+                                <div class="text-xs">
+                                    <span class="font-bold text-white">{{ comment.user.username }}:</span> 
+                                    <span class="text-gray-400">{{ comment.text }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <form action="{% url 'add_comment' item.id %}" method="post" class="flex gap-2">
+                        {% csrf_token %}
+                        <input type="text" name="text" placeholder="Escribe un comentario..." class="flex-1 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" required>
+                        <button type="submit" class="text-indigo-400 font-bold text-xs hover:text-indigo-300 transition">Enviar</button>
+                    </form>
+                </div>
+                
             </div>
+            {% empty %}
+            <div class="text-center py-10 text-gray-500">
+                Aún no hay actividad en la comunidad. ¡Sé el primero en reseñar un juego!
+            </div>
+            {% endfor %}
         </div>
         
         <div class="border border-dashed border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center text-center">

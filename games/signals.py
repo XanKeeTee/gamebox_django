@@ -48,15 +48,18 @@ def check_follow_badges(sender, instance, action, pk_set, **kwargs):
 @receiver(post_save, sender=Comment)
 def notify_comment(sender, instance, created, **kwargs):
     if created:
-        if instance.user != instance.user_game.user:
+        # El dueño de la reseña que recibe el comentario
+        dueño_de_la_resena = instance.review.user
+        
+        # Evitamos mandar una notificación si te comentas a ti mismo
+        if instance.user != dueño_de_la_resena:
             Notification.objects.create(
-                sender=instance.user,
-                user=instance.user_game.user,
-                notification_type="comment",
-                text_preview=instance.user_game.game.name[:30],
-                target_object_id=instance.user_game.game.igdb_id,
+                user=dueño_de_la_resena,           # El que recibe la notificación
+                sender=instance.user,              # El que escribió el comentario
+                notification_type='comment',       # El tipo exacto de tu TYPE_CHOICES
+                text_preview=f'"{instance.text[:50]}..."', # Usamos text_preview con un trocito del comentario
+                target_object_id=instance.review.id # Guardamos el ID de la reseña por si luego quieres crear un link
             )
-
 
 @receiver(m2m_changed, sender=Profile.follows.through)
 def notify_follow(sender, instance, action, pk_set, **kwargs):

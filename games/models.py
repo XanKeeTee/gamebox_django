@@ -43,6 +43,7 @@ class UserGame(models.Model):
     rating = models.IntegerField(null=True, blank=True)
     review = models.TextField(blank=True, null=True)
     is_favorite = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     likes = models.ManyToManyField(User, related_name="liked_reviews", blank=True)
 
@@ -73,11 +74,12 @@ def save_user_profile(sender, instance, **kwargs):
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    user_game = models.ForeignKey(
-        UserGame, related_name="comments", on_delete=models.CASCADE
-    )
-    text = models.TextField(max_length=300)
+    review = models.ForeignKey(UserGame, on_delete=models.CASCADE, related_name='comments')
+    text = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.text[:20]}"
 
 class GameList(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lists")

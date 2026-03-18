@@ -16,29 +16,36 @@ from .forms import GameListForm
 from .forms import GameListForm
 from django.utils.text import slugify
 
-@cache_page(60 * 15)
 def index(request):
     service = IGDBService()
     
+    # 1. Traer Trending Games
     trending_games = service.get_top_games()
     for game in trending_games:
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
+    # 2. Traer Upcoming Games
     upcoming_games = service.get_upcoming_games()[:10]
     for game in upcoming_games:
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
+    # 3. Construir el Feed Personalizado
     feed_items = []
     if request.user.is_authenticated:
+        # 1. Sacamos los IDs de los usuarios a los que sigues
         following_ids = request.user.profile.follows.values_list('user__id', flat=True)
+        
+        # 2. Filtramos: Solo usuarios que sigues (tu ID ya NO está aquí)
+        # y excluimos los de "backlog" si quieres.
         feed_items = UserGame.objects.filter(user__id__in=following_ids) \
             .exclude(status='backlog') \
             .select_related('user__profile', 'game') \
             .prefetch_related('comments__user__profile', 'likes') \
             .order_by('-updated_at')[:20]
-
+        
+    # 4. Renderizar la plantilla
     return render(request, 'games/home/index.html', {
         'hero_game': trending_games[0] if trending_games else None,
         'trending_games': trending_games[1:],
@@ -280,35 +287,36 @@ def public_profile(request, username):
     }
     return render(request, "games/profile/public_profile.html", context)
 
+# ¡OJO! Asegúrate de NO tener @cache_page encima de esta función
 def community(request):
-    """
-    Vista de la página de Comunidad.
-    Carga el feed de actividad y los usuarios recomendados para seguir.
-    """
-    if request.user.is_authenticated:
-        usuarios_sugeridos = User.objects.exclude(id=request.user.id).order_by('-date_joined')[:10]
-    else:
-        usuarios_sugeridos = User.objects.all().order_by('-date_joined')[:10]
-    actividad_reciente = [] 
+    # 1. Traemos TODAS las reseñas de la plataforma que tengan texto escrito
+    actividad_reciente = UserGame.objects.exclude(review__isnull=True).exclude(review="") \
+        .select_related('user__profile', 'game') \
+        .prefetch_related('comments__user__profile', 'likes') \
+        .order_by('-updated_at')[:30]
 
+    # 2. Tu lógica para sacar usuarios recomendados (Asegúrate de que no dé error)
+    usuarios_sugeridos = User.objects.exclude(id=request.user.id)[:5] if request.user.is_authenticated else User.objects.all()[:5]
+
+    # 3. Mandamos los datos al HTML (IMPORTANTE: el nombre debe ser 'actividades')
     context = {
+        'actividades': actividad_reciente, 
         'usuarios_comunidad': usuarios_sugeridos,
-        'actividades': actividad_reciente,
     }
     
-    return render(request, 'games/community/community.html', context)
+    return render(request, 'games/community/community.html', context) # Ajusta la ruta si tu html se llama distinto
 
-@login_required(login_url="login")
+@login_required
 def add_comment(request, review_id):
-    review = get_object_or_404(UserGame, id=review_id)
-    if request.method == "POST":
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.user = request.user
-            comment.user_game = review
-            comment.save()
-    return redirect(request.META.get("HTTP_REFERER", "index"))
+    if request.method == 'POST':
+        texto = request.POST.get('text', '').strip()
+        review = get_object_or_404(UserGame, id=review_id)
+        
+        if texto:
+            Comment.objects.create(user=request.user, review=review, text=texto)
+            
+        referer = request.META.get('HTTP_REFERER', '/')
+        return redirect(referer)
 
 
 @login_required(login_url="login")
@@ -375,20 +383,22 @@ def add_to_list_view(request, game_id):
         request, "games/lists/add_to_list.html", {"game": game, "my_lists": my_lists}
     )
 
-
-@login_required(login_url="login")
+@login_required
 def toggle_like(request, review_id):
-    review = get_object_or_404(UserGame, id=review_id)
-
-    liked = False
-    if request.user in review.likes.all():
-        review.likes.remove(request.user)
+    if request.method == 'POST': # Importante que sea POST por seguridad
+        review = get_object_or_404(UserGame, id=review_id)
         liked = False
-    else:
-        review.likes.add(request.user)
-        liked = True
-
-    return JsonResponse({"liked": liked, "count": review.likes.count()})
+        
+        # Si el usuario ya le dio like, se lo quitamos. Si no, se lo ponemos.
+        if request.user in review.likes.all():
+            review.likes.remove(request.user)
+        else:
+            review.likes.add(request.user)
+            liked = True
+            
+        return JsonResponse({'liked': liked, 'count': review.total_likes()})
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=400)
 
 
 @login_required(login_url="login")
@@ -577,3 +587,34 @@ def save_game_review(request, game_id):
 
         # Recargamos la página del juego para ver la reseña
         return redirect('detail', game_id=game_id)
+
+def update_review(request, game_id):
+    if request.method == 'POST':
+        # 1. Recogemos los datos del formulario (texto, nota, y datos del juego)
+        texto_resena = request.POST.get('review', '')
+        nota = request.POST.get('rating')
+        nombre_juego = request.POST.get('game_name', f'Juego {game_id}')
+        portada_url = request.POST.get('game_cover', '')
+
+        # 2. MAGIA: Buscamos el juego. Si NO existe, Django lo crea en el acto.
+        slug_generado = slugify(f"{nombre_juego}-{game_id}")
+        juego, _ = Game.objects.get_or_create(
+            igdb_id=game_id, 
+            defaults={
+                'name': nombre_juego, 
+                'cover_url': portada_url,
+                'slug': slug_generado
+            }
+        )
+
+        # 3. Guardamos la reseña y la nota conectándola con el usuario y el juego
+        interaccion, _ = UserGame.objects.get_or_create(user=request.user, game=juego)
+        interaccion.review = texto_resena
+        
+        if nota and nota.isdigit():
+            interaccion.rating = int(nota)
+            
+        interaccion.save()
+
+    # 4. Devolvemos al usuario a la ficha del juego
+    return redirect('detail', game_id=game_id)
