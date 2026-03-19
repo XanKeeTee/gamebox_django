@@ -1,177 +1,397 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}GameBox{% endblock %}</title>
-    
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
-    
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body {
-            background-color: #09090b;
-            color: #ffffff;
+        body { 
+            background-color: #09090b; 
+            color: #ffffff; 
         }
-        /* Ocultar barra de scroll pero permitir hacer scroll (útil para carruseles) */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans antialiased">
+<body class="antialiased min-h-screen flex flex-col">
 
-    <header class="sticky top-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-8">
+    <div class="bg-indigo-600/20 text-indigo-300 text-[10px] font-bold uppercase tracking-widest text-center py-1.5 hidden md:block">
+        🔥 GameBox Premium está en camino. <a href="#" class="text-white hover:underline">Descubre más →</a>
+    </div>
+
+    <nav class="sticky top-0 z-40 w-full backdrop-blur-xl bg-zinc-950/80 border-b border-white/5 shadow-2xl">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4 md:gap-8">
             
-            <div class="flex items-center gap-10">
-                <a href="{% url 'index' %}" class="flex items-center gap-3 text-2xl font-black text-white hover:text-indigo-400 transition group">
-                    <img src="{% static 'favicon.ico' %}" alt="Logo GameBox" class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition">
-                    <span class="tracking-tight">GAMEBOX</span>
+            <!-- LOGO Y ENLACES IZQUIERDA -->
+            <div class="flex items-center gap-8 shrink-0">
+                <a href="{% url 'index' %}" class="flex items-center gap-3 text-2xl font-black text-white hover:text-indigo-400 transition">
+                    <img src="{% static 'favicon.ico' %}" alt="Logo GameBox" class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20">   
+                    <span class="hidden sm:block">GAMEBOX</span> 
                 </a>
                 
-                <nav class="hidden md:flex items-center gap-6 text-sm font-bold text-gray-400">
-                    <a href="{% url 'index' %}" class="hover:text-white transition">Inicio</a>
+                <div class="hidden md:flex items-center gap-6 text-sm font-bold text-gray-400">
                     <a href="{% url 'explore' %}" class="hover:text-white transition">Explorar</a>
                     <a href="{% url 'community' %}" class="hover:text-white transition">Comunidad</a>
-                </nav>
+                </div>
             </div>
 
-            <div class="flex-1 max-w-xl hidden lg:block">
-                <form action="{% url 'search' %}" method="GET" class="relative">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                    <input type="text" name="q" placeholder="Buscar juegos, estudios, géneros..." 
-                           class="w-full bg-zinc-900 border border-white/10 rounded-full py-2.5 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+            <!-- BUSCADOR EXPANDIBLE -->
+            <div class="flex-1 flex justify-end items-center">
+                <form action="{% url 'search' %}" method="GET" class="relative group mr-2 md:mr-4">
+                    <input type="text" name="q" placeholder="Buscar juegos..." 
+                           class="w-10 h-10 pl-10 pr-4 rounded-full bg-transparent border border-transparent text-white text-sm focus:w-48 md:focus:w-72 focus:bg-zinc-900/80 focus:border-white/10 focus:outline-none transition-all duration-300 ease-in-out cursor-pointer focus:cursor-text placeholder-transparent focus:placeholder-gray-500">
+                    <div class="absolute left-0 top-0 w-10 h-10 flex items-center justify-center pointer-events-none text-gray-400 group-focus-within:text-indigo-400 transition-colors">
+                        <i class="fas fa-search"></i>
+                    </div>
                 </form>
             </div>
 
-            <div class="flex items-center gap-6">
+            <!-- BOTONES DERECHA -->
+            <div class="flex items-center gap-3 md:gap-4 shrink-0">
+                
                 {% if user.is_authenticated %}
                     
-                    <div class="relative inline-block text-left" id="notification-wrapper">
-                        <button onclick="toggleNotifications()" class="relative text-gray-400 hover:text-white transition focus:outline-none flex items-center p-2">
-                            <i class="fas fa-bell text-xl"></i>
-                            
-                            {% if user.notifications.all %}
-                                <span class="absolute top-1 right-1 flex h-2.5 w-2.5">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
-                            {% endif %}
+                    <!-- BOTÓN REGISTRAR MEJORADO -->
+                    <button onclick="openQuickLogModal()" class="hidden md:flex items-center gap-2 px-5 py-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500 hover:text-white font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:scale-105">
+                        <i class="fas fa-plus"></i> <span class="tracking-wide">Registrar</span>
+                    </button>
+
+                    <!-- CAMPANA NOTIFICACIONES -->
+                    <div class="relative" id="notifications-menu-container">
+                        <button onclick="toggleNotificationsMenu()" class="text-gray-400 hover:text-white transition relative ml-1 md:ml-2 focus:outline-none">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse border-2 border-zinc-950"></span>
                         </button>
 
-                        <div id="notif-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl shadow-black z-50 overflow-hidden transform transition-all">
-                            <div class="p-4 border-b border-white/10 bg-zinc-900/50 flex justify-between items-center">
-                                <h3 class="font-black text-white text-sm">Notificaciones</h3>
+                        <!-- Menú Desplegable de Notificaciones -->
+                        <div id="notifications-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-zinc-900 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-2 z-50 transform origin-top-right transition-all">
+                            <div class="px-4 py-3 border-b border-white/5 mb-2 flex justify-between items-center bg-black/20">
+                                <p class="text-sm font-bold text-white">Notificaciones</p>
+                                <span class="text-[10px] bg-indigo-500 text-white px-2 py-0.5 rounded-full font-bold">Nuevas</span>
                             </div>
                             
-                            <div class="max-h-96 overflow-y-auto no-scrollbar">
-                                {% if user.notifications.all %}
-                                    {% for notif in user.notifications.all|slice:":5" %}
-                                    <div class="p-4 border-b border-white/5 hover:bg-white/5 transition flex gap-3 items-start {% if not notif.is_seen %}bg-indigo-900/10{% endif %}">
-                                        <a href="{% url 'public_profile' notif.sender.username %}" class="shrink-0 w-8 h-8 rounded-full overflow-hidden border border-white/10 mt-1">
-                                            {% if notif.sender.profile.avatar %}
-                                                <img src="{{ notif.sender.profile.avatar.url }}" class="w-full h-full object-cover">
-                                            {% else %}
-                                                <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white">{{ notif.sender.username|slice:":1" }}</div>
-                                            {% endif %}
-                                        </a>
-                                        <div class="flex-1">
-                                            <p class="text-xs text-gray-300 leading-relaxed">
-                                                <a href="{% url 'public_profile' notif.sender.username %}" class="font-bold text-white hover:text-indigo-400">{{ notif.sender.username }}</a> 
-                                                {% if notif.notification_type == 'like' %} 
-                                                    le dio <i class="fas fa-heart text-pink-500 text-[10px] mx-1"></i> a tu reseña.
-                                                {% elif notif.notification_type == 'comment' %} 
-                                                    comentó: <span class="italic text-gray-400">{{ notif.text_preview }}</span>
-                                                {% elif notif.notification_type == 'follow' %} 
-                                                    ha empezado a seguirte.
-                                                {% endif %}
-                                            </p>
-                                            <span class="text-[9px] text-gray-500 mt-1 block uppercase tracking-wider font-bold">{{ notif.date|timesince }} ago</span>
-                                        </div>
-                                        {% if not notif.is_seen %}
-                                            <div class="w-2 h-2 bg-indigo-500 rounded-full mt-2 shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
-                                        {% endif %}
-                                    </div>
+                            <div class="max-h-72 overflow-y-auto no-scrollbar px-2 space-y-1">
+                                <!-- Suponiendo que tu modelo de notificaciones está relacionado con user (ajusta si tus campos se llaman distinto) -->
+                                {% if user.notification_set.all %}
+                                    {% for notif in user.notification_set.all|slice:":5" %}
+                                    <a href="#" class="block px-3 py-3 rounded-xl hover:bg-white/5 transition border border-transparent hover:border-white/5">
+                                        <p class="text-xs text-gray-300 leading-snug">
+                                            {{ notif.message }}
+                                        </p>
+                                        <p class="text-[10px] text-indigo-400 mt-1.5 font-semibold">{{ notif.created_at|timesince }} ago</p>
+                                    </a>
                                     {% endfor %}
                                 {% else %}
-                                    <div class="p-8 text-center flex flex-col items-center justify-center">
-                                        <span class="text-3xl mb-2 opacity-50">📭</span>
-                                        <p class="text-xs text-gray-500 font-bold">No tienes notificaciones nuevas</p>
+                                    <div class="px-3 py-6 text-center">
+                                        <i class="fas fa-box-open text-gray-600 text-2xl mb-2"></i>
+                                        <p class="text-xs text-gray-500">No tienes notificaciones nuevas.</p>
                                     </div>
                                 {% endif %}
+                            </div>
+
+                            <div class="border-t border-white/5 mt-2 pt-2 px-2">
+                                <a href="{% url 'notifications' %}" class="block text-center text-xs font-bold text-gray-400 hover:text-white transition py-2 rounded-lg hover:bg-white/5">
+                                    Ver todas las notificaciones
+                                </a>
                             </div>
                         </div>
                     </div>
 
-                    <a href="{% url 'profile' %}" class="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-indigo-500 transition">
-                        {% if user.profile.avatar %}
-                            <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
-                        {% else %}
-                            <div class="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-sm text-white">{{ user.username|slice:":1" }}</div>
-                        {% endif %}
-                    </a>
-                    
-                    <form action="{% url 'logout' %}" method="post" class="m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="text-xs font-bold text-gray-500 hover:text-red-400 transition">
-                            <i class="fas fa-sign-out-alt"></i> Salir
+                    <!-- MENÚ DE USUARIO -->
+                    <div class="relative" id="profile-menu-container">
+                        <button onclick="toggleProfileMenu()" class="flex items-center gap-2 focus:outline-none transform hover:scale-105 transition ml-2">
+                            <div class="w-9 h-9 rounded-full bg-indigo-900 flex items-center justify-center font-bold text-white overflow-hidden border border-white/10 hover:border-indigo-400 transition-all shadow-lg ring-2 ring-transparent hover:ring-indigo-500/30">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    {{ user.username|slice:":1"|upper }}
+                                {% endif %}
+                            </div>
                         </button>
-                    </form>
+
+                        <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-56 bg-zinc-900 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-2 z-50 transform origin-top-right transition-all">
+                            <div class="px-4 py-3 border-b border-white/5 mb-2 bg-black/20">
+                                <p class="text-[10px] uppercase tracking-wider font-bold text-gray-500">Conectado como</p>
+                                <p class="text-sm font-bold text-white truncate">{{ user.username }}</p>
+                            </div>
+                            
+                            <button onclick="openQuickLogModal(); toggleProfileMenu();" class="w-full md:hidden text-left block px-4 py-2.5 text-sm text-indigo-400 hover:bg-white/5 font-bold transition flex items-center gap-3">
+                                <i class="fas fa-plus w-4 text-center"></i> Registrar Juego
+                            </button>
+
+                            <a href="{% url 'profile' %}" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
+                                <i class="fas fa-user text-indigo-400 w-4 text-center"></i> Mi Perfil
+                            </a>
+                            
+                            <a href="#" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
+                                <i class="fas fa-cog text-gray-400 w-4 text-center"></i> Ajustes
+                            </a>
+                            
+                            <div class="border-t border-white/5 mt-2 pt-2">
+                                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full text-left block px-4 py-2 text-gray-400 hover:text-red-400 font-bold text-sm transition">
+                                        Cerrar Sesión
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
 
                 {% else %}
-                    <a href="{% url 'login' %}" class="text-sm font-bold text-gray-300 hover:text-white transition">Entrar</a>
-                    <a href="{% url 'register' %}" class="text-sm font-bold bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 transition">Registrarse</a>
+                    <a href="{% url 'login' %}" class="text-sm font-bold text-gray-300 hover:text-white transition hidden sm:block mr-2">Entrar</a>
+                    <a href="{% url 'register' %}" class="text-sm font-bold bg-white text-black px-5 py-2 rounded-full hover:bg-gray-200 hover:scale-105 transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">Unirse</a>
                 {% endif %}
+                
             </div>
-            
         </div>
-    </header>
+    </nav>
 
-    <main class="flex-grow pt-8">
-        {% block content %}
-        {% endblock %}
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
     </main>
 
-    <footer class="border-t border-white/5 py-10 mt-20">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-bold text-gray-600">
+    <footer class="border-t border-white/5 mt-20 bg-black/50 py-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-sm">
             <div class="flex items-center gap-2">
-                <img src="{% static 'favicon.ico' %}" class="w-4 h-4 rounded opacity-50">
-                <span>GAMEBOX &copy; {% now "Y" %}</span>
+                <span class="text-indigo-500"><i class="fas fa-gamepad"></i></span>
+                <span class="font-bold text-white">GameBox</span> &copy; 2026
             </div>
-            <p>Datos de juegos proporcionados por la API de IGDB.</p>
+            <div class="text-xs">Datos proporcionados por la API de IGDB.</div>
         </div>
     </footer>
 
+    {% if user.is_authenticated %}
+    <div id="quick-log-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <form><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"></form>
+
+        <div class="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden relative">
+            <button onclick="closeQuickLogModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <div id="ql-step-1" class="p-6">
+                <h3 class="text-xl font-black mb-4">Añadir a mi diario</h3>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
+                    <input type="text" id="ql-search-input" onkeyup="handleQuickSearch(event)" placeholder="Escribe el nombre del juego..." class="w-full bg-black border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div id="ql-results" class="mt-4 space-y-2 max-h-60 overflow-y-auto no-scrollbar">
+                    </div>
+            </div>
+
+            <div id="ql-step-2" class="hidden p-6">
+                <div class="flex items-center gap-4 border-b border-white/5 pb-4 mb-4">
+                    <img id="ql-selected-cover" src="" class="w-12 h-16 object-cover rounded shadow-lg border border-white/10">
+                    <div>
+                        <h4 class="font-bold text-white" id="ql-selected-name">Nombre del juego</h4>
+                        <button onclick="resetQuickLog()" class="text-xs font-bold text-indigo-400 hover:text-indigo-300">Cambiar juego</button>
+                    </div>
+                </div>
+
+                <form id="ql-form" onsubmit="submitQuickLog(event)">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Estado</label>
+                            <select id="ql-status" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                <option value="completed">Completado</option>
+                                <option value="playing">Jugando ahora</option>
+                                <option value="backlog">Añadir a pendientes</option>
+                                <option value="dropped">Abandonado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Puntuación</label>
+                            <select id="ql-rating" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500">
+                                <option value="">Sin nota</option>
+                                <option value="1">1 - Horrible</option>
+                                <option value="2">2 - Malo</option>
+                                <option value="3">3 - Mediocre</option>
+                                <option value="4">4 - Flojo</option>
+                                <option value="5">5 - Regular</option>
+                                <option value="6">6 - Aceptable</option>
+                                <option value="7">7 - Bueno</option>
+                                <option value="8">8 - Muy bueno</option>
+                                <option value="9">9 - Excelente</option>
+                                <option value="10">10 - Obra maestra</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Reseña (Opcional)</label>
+                        <textarea id="ql-review" rows="3" placeholder="¿Qué te ha parecido el juego?" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl transition shadow-lg flex justify-center items-center gap-2">
+                        <i class="fas fa-save"></i> Guardar en mi Diario
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% block scripts %}{% endblock %}
+
     <script>
-        // Función para abrir/cerrar el menú de notificaciones
-        function toggleNotifications() {
-            const dropdown = document.getElementById('notif-dropdown');
-            dropdown.classList.toggle('hidden');
+        // Lógica de menús desplegables
+        function toggleProfileMenu() {
+            document.getElementById('profile-dropdown').classList.toggle('hidden');
         }
 
-        // Cerrar notificaciones al hacer clic fuera
         document.addEventListener('click', function(event) {
-            const wrapper = document.getElementById('notification-wrapper');
-            const dropdown = document.getElementById('notif-dropdown');
-            
-            if (wrapper && !wrapper.contains(event.target)) {
-                if (!dropdown.classList.contains('hidden')) {
-                    dropdown.classList.add('hidden');
-                }
+            const container = document.getElementById('profile-menu-container');
+            const menu = document.getElementById('profile-dropdown');
+            if (container && !container.contains(event.target) && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
             }
         });
-    </script>
-    
-    {% block scripts %}
-    {% endblock %}
 
+        // Lógica de LIKES global
+        function toggleLike(btn, id) {
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+            fetch(`/review/${id}/like/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrftoken, 'Content-Type': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if(data.error) return;
+                btn.querySelector('.like-count').innerText = data.count;
+                const svg = btn.querySelector('svg');
+                if(data.liked) {
+                    btn.classList.replace('text-gray-500', 'text-pink-500');
+                    svg.setAttribute('fill', 'currentColor');
+                } else {
+                    btn.classList.replace('text-pink-500', 'text-gray-500');
+                    svg.setAttribute('fill', 'none');
+                }
+            });
+        }
+
+        // LÓGICA DEL QUICK LOG MODAL
+        {% if user.is_authenticated %}
+        let qlSearchTimeout = null;
+        let qlSelectedGame = null;
+
+        function openQuickLogModal() {
+            document.getElementById('quick-log-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('ql-search-input').focus(), 100);
+        }
+
+        function closeQuickLogModal() {
+            document.getElementById('quick-log-modal').classList.add('hidden');
+            resetQuickLog();
+        }
+
+        function resetQuickLog() {
+            qlSelectedGame = null;
+            document.getElementById('ql-step-1').classList.remove('hidden');
+            document.getElementById('ql-step-2').classList.add('hidden');
+            document.getElementById('ql-search-input').value = '';
+            document.getElementById('ql-results').innerHTML = '';
+            document.getElementById('ql-form').reset();
+        }
+
+        function handleQuickSearch(e) {
+            clearTimeout(qlSearchTimeout);
+            const query = e.target.value;
+            const resultsDiv = document.getElementById('ql-results');
+            
+            if (query.length < 3) { 
+                resultsDiv.innerHTML = ''; 
+                return; 
+            }
+            
+            resultsDiv.innerHTML = '<div class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
+            
+            qlSearchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/api/quick-search/?q=${query}`);
+                    const data = await res.json();
+                    
+                    if (data.games.length === 0) {
+                        resultsDiv.innerHTML = '<div class="text-center text-gray-500 py-4">No se encontraron juegos</div>';
+                        return;
+                    }
+
+                    resultsDiv.innerHTML = data.games.map(g => `
+                        <div onclick="selectGameForLog(${g.id}, '${g.name.replace(/'/g, "\\'")}', '${g.cover_url}')" class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-indigo-500/30">
+                            <div class="w-10 h-14 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
+                                ${g.cover_url ? `<img src="https:${g.cover_url}" class="w-full h-full object-cover">` : '<div class="flex items-center justify-center h-full text-xs">🎮</div>'}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-white">${g.name}</h4>
+                                <span class="text-xs text-gray-500">${g.year}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    resultsDiv.innerHTML = '<div class="text-center text-red-500 py-4">Error al buscar</div>';
+                }
+            }, 400); // 400ms debounce
+        }
+
+        function selectGameForLog(id, name, cover) {
+            qlSelectedGame = { id, name, cover };
+            document.getElementById('ql-step-1').classList.add('hidden');
+            document.getElementById('ql-step-2').classList.remove('hidden');
+            
+            document.getElementById('ql-selected-name').innerText = name;
+            document.getElementById('ql-selected-cover').src = cover ? 'https:' + cover : '';
+            // Si no tiene cover, lo ocultamos para que no salga la imagen rota
+            document.getElementById('ql-selected-cover').style.display = cover ? 'block' : 'none';
+        }
+
+        async function submitQuickLog(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btn.disabled = true;
+
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            const payload = {
+                game_id: qlSelectedGame.id,
+                name: qlSelectedGame.name,
+                cover_url: qlSelectedGame.cover ? 'https:' + qlSelectedGame.cover : '',
+                status: document.getElementById('ql-status').value,
+                rating: document.getElementById('ql-rating').value,
+                review: document.getElementById('ql-review').value
+            };
+
+            try {
+                const res = await fetch('/api/quick-log/', {
+                    method: 'POST',
+                    headers: { 
+                        'X-CSRFToken': csrftoken, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    // Recargamos la página para que la nueva reseña aparezca en el Feed
+                    window.location.reload();
+                } else {
+                    alert('Hubo un error al guardar la reseña.');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error(error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+        {% endif%}
+    </script>
 </body>
 </html>

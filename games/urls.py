@@ -29,4 +29,6 @@ urlpatterns = [
     path('follow/<str:username>/', views.toggle_follow, name='toggle_follow'),
     path('game/<int:game_id>/status/', views.update_game_status, name='update_game_status'),
     path('game/<int:game_id>/review/', views.save_game_review, name='save_game_review'),
+    path('api/quick-search/', views.quick_search_api, name='quick_search_api'),
+    path('api/quick-log/', views.quick_log_save, name='quick_log_save'),
 ]

@@ -2,6 +2,7 @@ import requests
 import time
 from datetime import datetime 
 from django.conf import settings
+from dateutil.relativedelta import relativedelta
 
 class IGDBService:
     def __init__(self):
@@ -41,14 +42,58 @@ class IGDBService:
         return []
 
     def search_games(self, query):
-        return self.get_games(search_query=query)
+        try:
+            query_clean = query.replace('"', '')
+            
+            # 1. Búsqueda limpia a IGDB (sin WHERE restrictivos). 
+            # Pedimos los campos 'category' y 'version_parent' para usarlos nosotros.
+            query_string = (
+                f'search "{query_clean}"; '
+                'fields name, cover.url, first_release_date, total_rating_count, total_rating, slug, category, version_parent; '
+                'limit 50;'
+            )
+            
+            response = requests.post(f"{self.base_url}/games", headers=self.headers, data=query_string)
+            
+            if response.status_code == 200:
+                raw_games = response.json()
+                juegos_limpios = []
+                
+                # 2. FILTRADO EN PYTHON (Magia pura)
+                for game in raw_games:
+                    categoria = game.get('category', 0)
+                    tiene_padre = 'version_parent' in game # Si tiene padre, es una edición rara o DLC
+                    
+                    # Solo aceptamos: Juegos principales (0), Remakes (8), Remasters (9)
+                    # Y que NO sean una edición alternativa (tiene_padre == False)
+                    if categoria in [0, 8, 9] and not tiene_padre:
+                        
+                        # Arreglamos la imagen si la tiene
+                        if 'cover' in game:
+                            game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+                            
+                        juegos_limpios.append(game)
+                
+                # 3. ORDENAMOS por popularidad para que los famosos queden arriba
+                juegos_limpios.sort(key=lambda x: x.get('total_rating_count') or 0, reverse=True)
+                
+                return juegos_limpios
+            else:
+                print(f"❌ ERROR IGDB {response.status_code}: {response.text}")
+                return []
+                
+        except Exception as e:
+            print(f"❌ ERROR PYTHON EN SEARCH_GAMES: {e}")
+            return []
 
     def get_top_games(self):
+        seis_meses_atras = int((datetime.now() - relativedelta(months=6)).timestamp())
+        
         data = {
             "fields": "name, cover.url, first_release_date, total_rating, slug",
-            "where": "total_rating >= 85 & total_rating_count > 50 & cover != null",
+            "where": f"first_release_date > {seis_meses_atras} & total_rating_count > 10 & cover != null",
             "sort": "total_rating desc",
-            "limit": "10"
+            "limit": "15"
         }
         
         response = requests.post(f"{self.base_url}/games", headers=self.headers, data=self._build_query(data))

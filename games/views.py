@@ -1,5 +1,4 @@
-import json
-
+import json,random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .services import IGDBService
@@ -19,11 +18,17 @@ from django.utils.text import slugify
 def index(request):
     service = IGDBService()
     
-    # 1. Traer Trending Games
+    # 1. Traer Trending Games (ahora serán recientes)
     trending_games = service.get_top_games()
-    for game in trending_games:
-        if 'cover' in game:
-            game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+    
+    # ELEGIR UN HERO ALEATORIO entre los 5 primeros para dar dinamismo
+    hero_game = None
+    if trending_games:
+        hero_game = random.choice(trending_games[:5])
+        # Lo quitamos de la lista para que no se duplique abajo
+        trending_games = [g for g in trending_games if g['id'] != hero_game['id']]
+        if 'cover' in hero_game:
+            hero_game['cover']['url'] = hero_game['cover']['url'].replace('t_thumb', 't_cover_big')
 
     # 2. Traer Upcoming Games
     upcoming_games = service.get_upcoming_games()[:10]
@@ -31,26 +36,35 @@ def index(request):
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 3. Construir el Feed Personalizado
+    # 3. Construir el Feed
     feed_items = []
+    es_feed_global = False # Variable para saber qué título mostrar en el HTML
+    
     if request.user.is_authenticated:
-        # 1. Sacamos los IDs de los usuarios a los que sigues
         following_ids = request.user.profile.follows.values_list('user__id', flat=True)
-        
-        # 2. Filtramos: Solo usuarios que sigues (tu ID ya NO está aquí)
-        # y excluimos los de "backlog" si quieres.
         feed_items = UserGame.objects.filter(user__id__in=following_ids) \
             .exclude(status='backlog') \
             .select_related('user__profile', 'game') \
             .prefetch_related('comments__user__profile', 'likes') \
             .order_by('-updated_at')[:20]
+            
+    # SI EL FEED ESTÁ VACÍO (no sigue a nadie o no está logueado), mostramos Actividad Global
+    if not feed_items:
+        feed_items = UserGame.objects.exclude(review__isnull=True).exclude(review="") \
+            .select_related('user__profile', 'game') \
+            .order_by('-updated_at')[:15]
+        es_feed_global = True
         
-    # 4. Renderizar la plantilla
+    # 4. (Opcional) Extraer las últimas listas creadas por los usuarios
+    recent_lists = GameList.objects.select_related('user').order_by('-created_at')[:3]
+        
     return render(request, 'games/home/index.html', {
-        'hero_game': trending_games[0] if trending_games else None,
-        'trending_games': trending_games[1:],
+        'hero_game': hero_game,
+        'trending_games': trending_games[:8], # Pasamos solo 8 a la barra lateral
         'upcoming': upcoming_games,
-        'feed_items': feed_items
+        'feed_items': feed_items,
+        'es_feed_global': es_feed_global,
+        'recent_lists': recent_lists
     })
 
 
@@ -620,3 +634,79 @@ def update_review(request, game_id):
 
     # 4. Devolvemos al usuario a la ficha del juego
     return redirect('detail', game_id=game_id)
+
+def quick_search_api(request):
+    query = request.GET.get('q', '')
+    if len(query) < 3:
+        return JsonResponse({'games': []})
+    
+    service = IGDBService()
+    # Traemos solo los 5 mejores resultados para no saturar el modal
+    results = service.search_games(query)[:5] 
+    
+    games_data = []
+    for game in results:
+        cover_url = ""
+        if 'cover' in game:
+            cover_url = game['cover']['url'].replace('t_thumb', 't_cover_small')
+            
+        # Intentamos sacar el año de lanzamiento para mostrarlo en la lista
+        year = ""
+        if 'first_release_date' in game:
+            import datetime
+            try:
+                dt = datetime.datetime.fromtimestamp(game['first_release_date'])
+                year = dt.year
+            except:
+                pass
+
+        games_data.append({
+            'id': game['id'],
+            'name': game['name'],
+            'cover_url': cover_url,
+            'year': year
+        })
+        
+    return JsonResponse({'games': games_data})
+
+@login_required
+def quick_log_save(request):
+    """Guarda la reseña rápida enviada por AJAX desde el modal"""
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        
+        game_id = data.get('game_id')
+        nombre = data.get('name')
+        cover_url = data.get('cover_url')
+        status = data.get('status', 'completed')
+        rating = data.get('rating')
+        review = data.get('review', '')
+
+        if not game_id or not nombre:
+            return JsonResponse({'error': 'Faltan datos'}, status=400)
+
+        # Generamos el slug como hacemos siempre
+        slug_generado = slugify(f"{nombre}-{game_id}")
+        
+        # Buscamos o creamos el juego en nuestra BD local
+        juego, _ = Game.objects.get_or_create(
+            igdb_id=game_id, 
+            defaults={
+                'name': nombre, 
+                'cover_url': cover_url,
+                'slug': slug_generado
+            }
+        )
+
+        # Buscamos o creamos la interacción
+        interaccion, _ = UserGame.objects.get_or_create(user=request.user, game=juego)
+        interaccion.status = status
+        interaccion.review = review
+        if rating and rating != "":
+            interaccion.rating = int(rating)
+        interaccion.save()
+
+        return JsonResponse({'success': True})
+        
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
