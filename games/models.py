@@ -137,3 +137,5 @@ class Notification(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     is_seen = models.BooleanField(default=False)
     target_object_id = models.IntegerField(null=True, blank=True)
+    class Meta:
+        ordering = ['-date']

@@ -126,33 +126,33 @@ def add_to_library(request, game_id, status):
 
 @login_required
 def profile(request):
-    """Perfil privado con estadísticas y juegos reales"""
-    user = request.user
-
-    favorite_games = UserGame.objects.filter(user=user, is_favorite=True).select_related('game')
-    backlog_games = UserGame.objects.filter(user=user, status='backlog').select_related('game')[:6]
-    completed_games = UserGame.objects.filter(user=user, status='completed').select_related('game')[:6]
-
-    count_playing = UserGame.objects.filter(user=user, status='playing').count()
-    count_completed = UserGame.objects.filter(user=user, status='completed').count()
-    count_backlog = UserGame.objects.filter(user=user, status='backlog').count()
-    count_dropped = UserGame.objects.filter(user=user, status='dropped').count()
+    # Traemos todos los juegos del usuario
+    mis_juegos = UserGame.objects.filter(user=request.user).select_related('game')
     
-    dist_data = [count_playing, count_completed, count_backlog, count_dropped]
-
-    ratings = []
-    for i in range(1, 6):
-        count = UserGame.objects.filter(user=user, rating=i).count()
-        ratings.append(count)
+    # 1. Contadores básicos
+    completados = mis_juegos.filter(status='completed')
+    backlog = mis_juegos.filter(status='backlog')
+    jugando = mis_juegos.filter(status='playing')
+    # Si tienes un campo de favoritos, ponlo aquí. Si no, puedes dejarlo a 0 o quitarlo.
+    
+    # 2. Distribución de Notas (Ajustado para 1 a 10)
+    rating_counts = [0] * 10 # Crea una lista de 10 ceros
+    for interaccion in mis_juegos.exclude(rating__isnull=True):
+        if 1 <= interaccion.rating <= 10:
+            rating_counts[interaccion.rating - 1] += 1
+            
+    # 3. Traemos las reseñas del usuario con el mismo formato que el Feed
+    mis_resenas = mis_juegos.exclude(review__isnull=True).exclude(review="") \
+        .prefetch_related('comments__user__profile', 'likes') \
+        .order_by('-updated_at')
 
     context = {
-        'favorite_games': favorite_games,
-        'backlog_games': backlog_games,
-        'completed_games': completed_games,
-        'total_count': UserGame.objects.filter(user=user).count(),
-        'dist_data': json.dumps(dist_data),
-        'rating_data': json.dumps(ratings),
-        'rating_labels': json.dumps(['1★', '2★', '3★', '4★', '5★']),
+        'total_games': mis_juegos.count(),
+        'completados': completados,
+        'backlog': backlog,
+        'jugando': jugando,
+        'rating_counts': json.dumps(rating_counts), # Pasamos los datos listos para Javascript
+        'actividades': mis_resenas, # <--- ¡Tus reseñas!
     }
     
     return render(request, 'games/profile/profile.html', context)
@@ -247,45 +247,47 @@ def register(request):
 
 
 def public_profile(request, username):
+    # 1. Buscamos al usuario que estamos visitando
     profile_user = get_object_or_404(User, username=username)
+    
+    # 2. Traemos SUS juegos
+    sus_juegos = UserGame.objects.filter(user=profile_user).select_related('game')
+    
+    # Contadores
+    completados = sus_juegos.filter(status='completed')
+    backlog = sus_juegos.filter(status='backlog')
+    jugando = sus_juegos.filter(status='playing')
+    
+    # 3. Distribución de Notas (1 a 10)
+    rating_counts = [0] * 10
+    for interaccion in sus_juegos.exclude(rating__isnull=True):
+        if 1 <= interaccion.rating <= 10:
+            rating_counts[interaccion.rating - 1] += 1
+            
+    # 4. Sus Reseñas
+    sus_resenas = sus_juegos.exclude(review__isnull=True).exclude(review="") \
+        .prefetch_related('comments__user__profile', 'likes') \
+        .order_by('-updated_at')
 
-    my_games = (
-        UserGame.objects.filter(user=profile_user)
-        .select_related("game")
-        .order_by("-updated_at")
-    )
-
-    user_lists = profile_user.lists.all().order_by("-created_at")
-
-    playing = my_games.filter(status="playing")
-    backlog = my_games.filter(status="backlog")
-    completed = my_games.filter(status="completed")
-    favorites = my_games.filter(is_favorite=True)
-    reviews = my_games.exclude(review__exact="").exclude(review__isnull=True)
-    usuario_visitado = get_object_or_404(User, username=username)
-
-    # Comprobar si TÚ (el que mira) ya sigues a este usuario
+    # 5. Comprobar si el usuario logueado ya le sigue (Ajusta esto si tu modelo de follows es distinto)
     is_following = False
-    if request.user.is_authenticated:
-        if request.user.profile.follows.filter(id=profile_user.profile.id).exists():
-            is_following = True
+    if request.user.is_authenticated and request.user != profile_user:
+        # Aquí pon tu lógica real para saber si le sigues
+        # Ejemplo: is_following = profile_user in request.user.profile.following.all()
+        pass
 
     context = {
-        "profile_user": profile_user,
-        "playing": my_games.filter(status="playing"),
-        "backlog": my_games.filter(status="backlog"),
-        'target_user': usuario_visitado,
-        "completed": my_games.filter(status="completed"),
-        "favorites": my_games.filter(is_favorite=True),
-        "reviews": my_games.exclude(review__exact="").exclude(review__isnull=True),
-        "lists": user_lists,
-        "total_count": my_games.count(),
-        "fav_count": my_games.filter(is_favorite=True).count(),
-        "is_following": is_following,
-        "followers_count": profile_user.profile.followed_by.count(),
-        "following_count": profile_user.profile.follows.count(),
+        'profile_user': profile_user, # ¡Importante! Pasamos al usuario visitado
+        'total_games': sus_juegos.count(),
+        'completados': completados,
+        'backlog': backlog,
+        'jugando': jugando,
+        'rating_counts': json.dumps(rating_counts),
+        'actividades': sus_resenas,
+        'is_following': is_following,
     }
-    return render(request, "games/profile/public_profile.html", context)
+    
+    return render(request, 'games/profile/public_profile.html', context)
 
 # ¡OJO! Asegúrate de NO tener @cache_page encima de esta función
 def community(request):
