@@ -101,7 +101,7 @@
                                 {% endif %}
 
                                 <div class="flex items-center gap-8 text-sm font-bold text-zinc-500 uppercase tracking-widest">
-                                    <form action="{% url 'toggle_like' item.id %}" method="POST" class="like-form m-0">
+                                    <form action="{% url 'toggle_like' item.uuid %}" method="POST" class="like-form m-0">
                                         {% csrf_token %}
                                         <button type="submit" class="group flex items-center gap-3 transition-colors {% if request.user in item.likes.all %}text-pink-500{% else %}hover:text-pink-500{% endif %}">
                                             <i class="{% if request.user in item.likes.all %}fas{% else %}far{% endif %} fa-heart text-lg group-active:scale-75 transition-transform"></i>
@@ -130,7 +130,7 @@
                                             </div>
                                             {% endif %}
 
-                                            <form action="{% url 'add_comment' item.id %}" method="POST" class="flex gap-3">
+                                            <form action="{% url 'add_comment' item.uuid %}" method="POST" class="flex gap-3">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="next" value="{{ request.path }}">
                                                 <input type="text" name="content" placeholder="Escribe un comentario..." required class="flex-1 bg-zinc-900 border border-white/5 rounded-xl px-4 py-3 text-sm text-white focus:border-indigo-500 outline-none transition shadow-inner">

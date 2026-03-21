@@ -204,33 +204,31 @@ def add_to_library(request, game_id, status):
 
 @login_required
 def profile(request):
-    # Traemos todos los juegos del usuario
     mis_juegos = UserGame.objects.filter(user=request.user).select_related('game')
     
-    # 1. Contadores básicos
     completados = mis_juegos.filter(status='completed')
     backlog = mis_juegos.filter(status='backlog')
     jugando = mis_juegos.filter(status='playing')
-    # Si tienes un campo de favoritos, ponlo aquí. Si no, puedes dejarlo a 0 o quitarlo.
     
-    # 2. Distribución de Notas (Ajustado para 1 a 10)
-    rating_counts = [0] * 10 # Crea una lista de 10 ceros
+    rating_counts = [0] * 10
     for interaccion in mis_juegos.exclude(rating__isnull=True):
         if 1 <= interaccion.rating <= 10:
             rating_counts[interaccion.rating - 1] += 1
             
-    # 3. Traemos las reseñas del usuario con el mismo formato que el Feed
     mis_resenas = mis_juegos.exclude(review__isnull=True).exclude(review="") \
         .prefetch_related('comments__user__profile', 'likes') \
         .order_by('-updated_at')
+
+    listas = GameList.objects.filter(user=request.user).order_by('-created_at')
 
     context = {
         'total_games': mis_juegos.count(),
         'completados': completados,
         'backlog': backlog,
         'jugando': jugando,
-        'rating_counts': json.dumps(rating_counts), # Pasamos los datos listos para Javascript
-        'actividades': mis_resenas, # <--- ¡Tus reseñas!
+        'rating_counts': json.dumps(rating_counts),
+        'actividades': mis_resenas,
+        'listas': listas,
     }
     
     return render(request, 'games/profile/profile.html', context)
@@ -385,37 +383,31 @@ def register(request):
 
 
 def public_profile(request, username):
-    # 1. Buscamos al usuario que estamos visitando
     profile_user = get_object_or_404(User, username=username)
     
-    # 2. Traemos SUS juegos
     sus_juegos = UserGame.objects.filter(user=profile_user).select_related('game')
     
-    # Contadores
     completados = sus_juegos.filter(status='completed')
     backlog = sus_juegos.filter(status='backlog')
     jugando = sus_juegos.filter(status='playing')
     
-    # 3. Distribución de Notas (1 a 10)
     rating_counts = [0] * 10
     for interaccion in sus_juegos.exclude(rating__isnull=True):
         if 1 <= interaccion.rating <= 10:
             rating_counts[interaccion.rating - 1] += 1
             
-    # 4. Sus Reseñas
     sus_resenas = sus_juegos.exclude(review__isnull=True).exclude(review="") \
         .prefetch_related('comments__user__profile', 'likes') \
         .order_by('-updated_at')
 
-    # 5. Comprobar si el usuario logueado ya le sigue (Ajusta esto si tu modelo de follows es distinto)
     is_following = False
     if request.user.is_authenticated and request.user != profile_user:
-        # Aquí pon tu lógica real para saber si le sigues
-        # Ejemplo: is_following = profile_user in request.user.profile.following.all()
-        pass
+        is_following = profile_user.profile in request.user.profile.follows.all()
+
+    listas = GameList.objects.filter(user=profile_user).order_by('-created_at')
 
     context = {
-        'profile_user': profile_user, # ¡Importante! Pasamos al usuario visitado
+        'profile_user': profile_user,
         'total_games': sus_juegos.count(),
         'completados': completados,
         'backlog': backlog,
@@ -423,8 +415,8 @@ def public_profile(request, username):
         'rating_counts': json.dumps(rating_counts),
         'actividades': sus_resenas,
         'is_following': is_following,
+        'listas': listas,
     }
-    
     return render(request, 'games/profile/public_profile.html', context)
 
 # ¡OJO! Asegúrate de NO tener @cache_page encima de esta función
@@ -451,6 +443,7 @@ def add_comment(request, review_id):
     if request.method == 'POST':
         texto = request.POST.get('text', '').strip()
         review = get_object_or_404(UserGame, id=review_id)
+        review = get_object_or_404(UserGame, uuid=review_id)
         
         if texto:
             Comment.objects.create(user=request.user, review=review, text=texto)
@@ -543,7 +536,7 @@ def toggle_like(request, review_id):
     if request.method == 'POST': # Importante que sea POST por seguridad
         review = get_object_or_404(UserGame, id=review_id)
         liked = False
-        
+        review = get_object_or_404(UserGame, uuid=review_id)
         # Si el usuario ya le dio like, se lo quitamos. Si no, se lo ponemos.
         if request.user in review.likes.all():
             review.likes.remove(request.user)
@@ -952,6 +945,7 @@ def remove_from_list(request, list_id, game_id):
     
     lista = get_object_or_404(GameList, id=list_id, user=request.user)
     entry = get_object_or_404(ListEntry, game_list=lista, game__igdb_id=game_id)
+    game_list = get_object_or_404(GameList, uuid=list_id)
     
     entry.delete()
     

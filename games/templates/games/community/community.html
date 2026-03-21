@@ -68,12 +68,14 @@
                         {% endif %}
                         
                         <div class="flex items-center gap-6 mt-4 pt-3 border-t border-white/5">
-                            <button onclick="toggleLike(this, {{ item.id }})" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
+                            <!-- CORRECCIÓN 1: 'item.uuid' con comillas para que el JS no se rompa -->
+                            <button onclick="toggleLike(this, '{{ item.uuid }}')" class="flex items-center gap-1.5 text-xs font-bold transition {% if user in item.likes.all %} text-pink-500 {% else %} text-gray-500 hover:text-pink-400 {% endif %}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="{% if user in item.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
                                 <span class="like-count">{{ item.total_likes }}</span>
                             </button>
                             
-                            <button class="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-400 transition" onclick="document.getElementById('comment-box-com-{{ item.id }}').classList.toggle('hidden')">
+                            <!-- CORRECCIÓN 2: 'item.uuid' en el ID del div a mostrar -->
+                            <button class="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-blue-400 transition" onclick="document.getElementById('comment-box-com-{{ item.uuid }}').classList.toggle('hidden')">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                 <span>{{ item.comments.count }}</span>
                             </button>
@@ -81,7 +83,8 @@
                     </div>
                 </div>
 
-                <div id="comment-box-com-{{ item.id }}" class="hidden mt-4 pt-4 border-t border-white/5 bg-black/20 rounded-xl p-4">
+                <!-- CORRECCIÓN 3: 'item.uuid' en el ID del div -->
+                <div id="comment-box-com-{{ item.uuid }}" class="hidden mt-4 pt-4 border-t border-white/5 bg-black/20 rounded-xl p-4">
                     {% if item.comments.all %}
                         <div class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar">
                             {% for comment in item.comments.all %}
@@ -93,7 +96,8 @@
                         </div>
                     {% endif %}
                     
-                    <form action="{% url 'add_comment' item.id %}" method="post" class="flex gap-2">
+                    <!-- CORRECCIÓN 4: 'item.uuid' en la URL del formulario -->
+                    <form action="{% url 'add_comment' item.uuid %}" method="post" class="flex gap-2">
                         {% csrf_token %}
                         <input type="text" name="text" placeholder="Escribe un comentario..." class="flex-1 bg-zinc-900 border border-white/10 rounded-full px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500" required>
                         <button type="submit" class="text-indigo-400 font-bold text-xs hover:text-indigo-300 transition">Enviar</button>
