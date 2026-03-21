@@ -1,207 +1,362 @@
 {% extends 'games/base.html' %}
-{% load static %}
-{% load game_filters %} {% block title %}{{ game.name }} - GameBox{% endblock %}
+
+{% block title %}{{ game.name }} - GameBox{% endblock %}
 
 {% block content %}
-<div class="relative w-full h-[400px] bg-zinc-900 overflow-hidden">
-    {% if game.screenshots %}
-        <img src="{{ game.screenshots.0.url|replace:'t_thumb,t_1080p' }}" class="absolute inset-0 w-full h-full object-cover opacity-40 blur-sm">
-    {% else %}
-        <img src="{{ game.cover.url }}" class="absolute inset-0 w-full h-full object-cover opacity-20 blur-xl scale-110">
-    {% endif %}
-    <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent"></div>
-</div>
 
-<div class="max-w-7xl mx-auto px-6 -mt-48 relative z-10 pb-20">
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
-        
-        <div class="lg:col-span-1 space-y-6">
-            <div class="aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)] border border-white/10 relative group">
-                <img src="{{ game.cover.url|replace:'t_thumb,t_cover_big' }}" alt="{{ game.name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                
-                {% if game.total_rating %}
-                <div class="absolute top-4 right-4 bg-[#09090b]/80 backdrop-blur-md border border-indigo-500/50 rounded-xl p-2 text-center shadow-lg">
-                    <span class="block text-2xl font-black text-white leading-none">{{ game.total_rating|floatformat:0 }}</span>
-                    <span class="block text-[8px] uppercase tracking-widest text-indigo-400 mt-1">Score</span>
-                </div>
-                {% endif %}
-            </div>
-
-            {% if user.is_authenticated %}
-                <div class="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-white/5 p-4 shadow-lg flex flex-col gap-3">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-gray-500 text-center mb-1">Tu Biblioteca</h3>
-                    
-                    <button id="btn-playing" onclick="setStatus('{{ game.id }}', 'playing', '{{ game.name|escapejs }}', '{{ game.cover.url }}')" 
-                            class="w-full py-2.5 rounded-xl text-white text-sm font-bold transition flex items-center justify-center gap-2 border border-white/5 
-                            {% if user_status == 'playing' %} bg-blue-600 {% else %} bg-zinc-800 hover:bg-blue-600/80 {% endif %}">
-                        <i class="fas fa-play text-blue-400 {% if user_status == 'playing' %}text-white{% endif %}" id="icon-playing"></i> Jugando
-                    </button>
-                    
-                    <button id="btn-completed" onclick="setStatus('{{ game.id }}', 'completed', '{{ game.name|escapejs }}', '{{ game.cover.url }}')" 
-                            class="w-full py-2.5 rounded-xl text-white text-sm font-bold transition flex items-center justify-center gap-2 border border-white/5 
-                            {% if user_status == 'completed' %} bg-yellow-500 {% else %} bg-zinc-800 hover:bg-yellow-500/80 {% endif %}">
-                        <i class="fas fa-star text-yellow-400 {% if user_status == 'completed' %}text-white{% endif %}" id="icon-completed"></i> Completado
-                    </button>
-                    
-                    <button id="btn-backlog" onclick="setStatus('{{ game.id }}', 'backlog', '{{ game.name|escapejs }}', '{{ game.cover.url }}')" 
-                            class="w-full py-2.5 rounded-xl text-white text-sm font-bold transition flex items-center justify-center gap-2 border border-white/5 
-                            {% if user_status == 'backlog' %} bg-purple-600 {% else %} bg-zinc-800 hover:bg-purple-600/80 {% endif %}">
-                        <i class="fas fa-clock text-purple-400 {% if user_status == 'backlog' %}text-white{% endif %}" id="icon-backlog"></i> Backlog
-                    </button>
-                </div>
-            {% else %}
-            <div class="bg-zinc-900/80 rounded-2xl border border-white/5 p-6 text-center shadow-lg">
-                <p class="text-sm text-gray-400 mb-4">Inicia sesión para añadir a tu biblioteca</p>
-                <a href="{% url 'login' %}" class="block w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold transition">Login</a>
-            </div>
-            {% endif %}
-
-            <div class="space-y-4">
-                {% if game.genres %}
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Géneros</h4>
-                    <div class="flex flex-wrap gap-2">
-                        {% for genre in game.genres %}
-                            <span class="px-3 py-1 bg-zinc-800 text-gray-300 text-xs rounded-full border border-white/5">{{ genre.name }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                {% if game.platforms %}
-                <div>
-                    <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Plataformas</h4>
-                    <div class="flex flex-wrap gap-2">
-                        {% for plat in game.platforms %}
-                            <span class="px-3 py-1 bg-indigo-900/30 text-indigo-300 text-xs rounded-full border border-indigo-500/20">{{ plat.name }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="lg:col-span-3 mt-10 lg:mt-0">
-            <div class="mb-10">
-                <h1 class="text-5xl md:text-6xl font-black text-white tracking-tighter mb-4">{{ game.name }}</h1>
-                <div class="flex items-center gap-4 text-sm text-gray-400 font-medium">
-                    {% if game.first_release_date %}
-                        <span><i class="fas fa-calendar-alt text-indigo-500 mr-1"></i> {{ game.first_release_date }}</span>
-                    {% endif %}
-                    </div>
-            </div>
-
-            {% if game.summary %}
-            <div class="mb-12">
-                <h3 class="text-xl font-black text-white mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span> Sinopsis
-                </h3>
-                <p class="text-gray-300 leading-relaxed text-lg">{{ game.summary }}</p>
-            </div>
-            {% endif %}
-
-            {% if game.screenshots %}
-            <div class="mb-12">
-                <h3 class="text-xl font-black text-white mb-4 flex items-center gap-2">
-                    <span class="w-1.5 h-6 bg-purple-500 rounded-full"></span> Galería
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {% for shot in game.screenshots|slice:":3" %}
-                        <div class="aspect-video rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition cursor-pointer">
-                            <img src="{{ shot.url|replace:'t_thumb,t_720p' }}" class="w-full h-full object-cover hover:scale-110 transition duration-500">
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="mb-12 bg-zinc-900/40 rounded-3xl p-8 border border-white/5 relative overflow-hidden">
-                <h3 class="text-2xl font-black text-white mb-6 flex items-center gap-3">
-                    <i class="fas fa-book-open text-indigo-500"></i> Tu Diario
-                </h3>
-                
-                {% if user.is_authenticated %}
-                <form method="POST" action="{% url 'save_game_review' game.id %}" class="relative z-10">
-                    {% csrf_token %}
-                    <input type="hidden" name="game_name" value="{{ game.name }}">
-                    <input type="hidden" name="game_cover" value="{{ game.cover.url }}">
-                    
-                    <div class="flex items-center gap-4 mb-6 bg-black/20 p-4 rounded-2xl border border-white/5 w-fit">
-                        <span class="text-gray-400 text-xs font-bold uppercase tracking-widest">Puntuación</span>
-                        <select name="rating" class="bg-zinc-800 border border-white/10 rounded-xl px-4 py-2 text-yellow-500 font-black focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                            <option value="">Sin nota</option>
-                            {% for i in "12345678910"|make_list %}
-                                <option value="{{ forloop.counter }}" {% if user_status and user_rating == forloop.counter %}selected{% endif %}>
-                                    {{ forloop.counter }} ★
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <textarea name="review" rows="4" placeholder="Escribe aquí tu opinión sobre {{ game.name }}..." 
-                            class="w-full bg-[#09090b]/80 border border-white/10 rounded-2xl p-5 text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none shadow-inner text-lg">{% if user_review %}{{ user_review }}{% endif %}</textarea>
-                    
-                    <div class="flex justify-end mt-4">
-                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl transition shadow-lg flex items-center gap-2">
-                            <i class="fas fa-save"></i> Guardar Reseña
-                        </button>
-                    </div>
-                </form>
-                {% else %}
-                <div class="text-center py-10 bg-black/20 rounded-2xl border border-dashed border-white/10">
-                    <p class="text-gray-500">Debes iniciar sesión para puntuar y reseñar juegos.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<div class="relative w-full h-[400px] md:h-[500px] flex items-end mb-8 overflow-hidden">
+    <div class="absolute inset-0">
+        {% if game.artworks %}
+            <img src="https:{{ game.artworks.0.url }}" class="w-full h-full object-cover opacity-30 blur-sm scale-105">
+        {% elif game.cover %}
+            <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover opacity-20 blur-xl scale-110">
+        {% endif %}
+        <div class="absolute inset-0 bg-[#09090b]/40 backdrop-blur-[2px]"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/80 to-transparent"></div>
     </div>
 </div>
 
-{% if user.is_authenticated %}
-<script>
-    function setStatus(gameId, status, gameName, coverUrl) {
-    fetch(`/game/${gameId}/status/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            status: status,
-            name: gameName,
-            cover_url: coverUrl
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 1. Apagamos todos los botones (los volvemos gris zinc-800)
-            const btns = ['playing', 'completed', 'backlog'];
-            btns.forEach(b => {
-                let btn = document.getElementById('btn-' + b);
-                btn.classList.remove('bg-blue-600', 'bg-yellow-500', 'bg-purple-600');
-                btn.classList.add('bg-zinc-800');
+<main class="max-w-6xl mx-auto px-6 pb-24 -mt-64 relative z-10 grid grid-cols-1 md:grid-cols-12 gap-10">
+    
+    <div class="md:col-span-3 flex flex-col gap-3">
+        
+        <div class="w-full rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-zinc-900 aspect-[3/4] mb-2">
+            {% if game.cover %}
+                <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center text-4xl">🎮</div>
+            {% endif %}
+        </div>
+
+        {% if user.is_authenticated %}
+            <button onclick="openQuickLogModalPreloaded()" class="w-full bg-pink-600 hover:bg-pink-500 text-white py-2.5 rounded text-sm font-bold transition shadow-lg">
+                {% if user_interaction %}Editar tu registro{% else %}Registrar o Reseñar{% endif %}
+            </button>
+            
+            <div class="grid grid-cols-4 gap-1.5 bg-zinc-900/50 p-1.5 rounded border border-white/5">
+                <button onclick="updateGameStatus({{ game.id }}, 'completed')" class="flex flex-col items-center justify-center py-2 rounded transition hover:bg-zinc-800 group {% if user_interaction.status == 'completed' %}text-green-500{% else %}text-gray-500{% endif %}">
+                    <i class="fas fa-check-circle text-lg mb-1 group-hover:text-green-400"></i>
+                    <span class="text-[8px] uppercase font-bold tracking-wider">Jugado</span>
+                </button>
+                <button onclick="updateGameStatus({{ game.id }}, 'playing')" class="flex flex-col items-center justify-center py-2 rounded transition hover:bg-zinc-800 group {% if user_interaction.status == 'playing' %}text-blue-500{% else %}text-gray-500{% endif %}">
+                    <i class="fas fa-gamepad text-lg mb-1 group-hover:text-blue-400"></i>
+                    <span class="text-[8px] uppercase font-bold tracking-wider">Jugando</span>
+                </button>
+                <button onclick="updateGameStatus({{ game.id }}, 'backlog')" class="flex flex-col items-center justify-center py-2 rounded transition hover:bg-zinc-800 group {% if user_interaction.status == 'backlog' %}text-yellow-500{% else %}text-gray-500{% endif %}">
+                    <i class="fas fa-clock text-lg mb-1 group-hover:text-yellow-400"></i>
+                    <span class="text-[8px] uppercase font-bold tracking-wider">Pendiente</span>
+                </button>
+                <button onclick="updateGameStatus({{ game.id }}, 'dropped')" class="flex flex-col items-center justify-center py-2 rounded transition hover:bg-zinc-800 group {% if user_interaction.status == 'dropped' %}text-red-500{% else %}text-gray-500{% endif %}">
+                    <i class="fas fa-times-circle text-lg mb-1 group-hover:text-red-400"></i>
+                    <span class="text-[8px] uppercase font-bold tracking-wider">Dejado</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-1.5">
+                <a href="{% url 'add_to_list' game.id %}" class="col-span-3 bg-zinc-900 hover:bg-zinc-800 text-white py-2 rounded text-xs font-bold transition flex items-center justify-center gap-2 border border-white/5">
+                    <i class="fas fa-list-ul"></i> Añadir a listas
+                </a>
+                <button onclick="toggleGameFavorite({{ game.id }})" class="col-span-1 bg-zinc-900 hover:bg-zinc-800 {% if user_interaction and user_interaction.favorite %}text-pink-500{% else %}text-gray-400{% endif %} hover:text-pink-500 py-2 rounded transition flex items-center justify-center border border-white/5">
+                    <i class="fas fa-heart"></i>
+                </button>
+            </div>
+        {% else %}
+            <a href="{% url 'login' %}" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded text-center text-sm border border-white/5 font-bold transition">
+                Inicia sesión para registrar
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="md:col-span-9">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-black text-white tracking-tighter leading-tight mb-2">{{ game.name }}</h1>
+                <p class="text-gray-400 text-sm">
+                    por {% for dev in developers %}<span class="font-bold text-white">{{ dev }}</span>{% if not forloop.last %}, {% endif %}{% empty %}Desarrollador desconocido{% endfor %}
+                </p>
+            </div>
+            {% if game.first_release_date %}
+                <div class="shrink-0 bg-zinc-800/80 border border-white/10 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300 flex items-center gap-2">
+                    <span class="bg-zinc-600 px-1.5 py-0.5 rounded text-[10px] uppercase">Lanzamiento</span>
+                    {{ game.first_release_date|date:"d M Y" }}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if game.summary %}
+            <p class="text-gray-300 leading-relaxed text-sm mb-8">{{ game.summary }}</p>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-10 border-t border-b border-white/5 py-4">
+            <div class="md:col-span-4 flex gap-4">
+                <span class="text-[10px] uppercase font-bold text-gray-500">Géneros</span>
+                <p class="text-xs text-gray-300 border-b border-gray-600 pb-0.5 hover:text-white cursor-pointer transition">
+                    {% for genre in game.genres %}{{ genre.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+            </div>
+            <div class="md:col-span-8 flex gap-4">
+                <span class="text-[10px] uppercase font-bold text-gray-500">Plataformas</span>
+                <div class="flex flex-wrap gap-2 text-xs text-gray-300">
+                    {% for platform in game.platforms %}
+                        <span class="border border-white/10 px-2 py-0.5 rounded hover:bg-white/10 cursor-pointer transition">{{ platform.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
+            <div class="bg-zinc-900/50 border border-white/5 rounded-lg p-4 flex flex-col items-center justify-center">
+                <span class="text-gray-500 text-[10px] font-bold uppercase mb-1">Rating IGDB</span>
+                <span class="text-3xl font-black text-white">{% if game.total_rating %}{{ game.total_rating|floatformat:1 }}{% else %}--{% endif %}</span>
+            </div>
+            <div class="bg-zinc-900/50 border border-white/5 rounded-lg p-4 flex flex-col justify-center gap-1">
+                <div class="flex justify-between items-center"><span class="text-[11px] text-gray-400 uppercase font-bold"><i class="fas fa-check-circle text-green-500 w-4"></i> Jugados</span><span class="text-xs font-bold text-white">{{ stats.plays }}</span></div>
+                <div class="flex justify-between items-center"><span class="text-[11px] text-gray-400 uppercase font-bold"><i class="fas fa-gamepad text-blue-500 w-4"></i> Jugando</span><span class="text-xs font-bold text-white">{{ stats.playing }}</span></div>
+                <div class="flex justify-between items-center"><span class="text-[11px] text-gray-400 uppercase font-bold"><i class="fas fa-clock text-yellow-500 w-4"></i> Pendientes</span><span class="text-xs font-bold text-white">{{ stats.backlogs }}</span></div>
+            </div>
+            <div class="bg-zinc-900/50 border border-white/5 rounded-lg p-4 flex flex-col items-center justify-center">
+                <span class="text-xl font-black text-white mb-1">{{ reviews|length }}</span>
+                <span class="text-gray-500 text-[10px] font-bold uppercase">Reseñas</span>
+            </div>
+            <div class="bg-zinc-900/50 border border-white/5 rounded-lg p-4 flex flex-col items-center justify-center">
+                <span class="text-xl font-black text-white mb-1">{{ game.total_rating_count|default:"0" }}</span>
+                <span class="text-gray-500 text-[10px] font-bold uppercase">Votos en IGDB</span>
+            </div>
+        </div>
+
+        <div class="mb-12">
+            <div class="flex gap-6 border-b border-white/10 mb-6 text-sm font-bold text-gray-500 overflow-x-auto no-scrollbar">
+                {% if game.similar_games %}
+                    <button onclick="switchTab('similar')" id="btn-similar" class="pb-2 border-b-2 border-pink-500 text-white whitespace-nowrap">Similares</button>
+                {% endif %}
+                {% if game.dlcs %}
+                    <button onclick="switchTab('dlcs')" id="btn-dlcs" class="pb-2 border-b-2 border-transparent hover:text-white whitespace-nowrap">DLCs</button>
+                {% endif %}
+                {% if game.expansions %}
+                    <button onclick="switchTab('expansions')" id="btn-expansions" class="pb-2 border-b-2 border-transparent hover:text-white whitespace-nowrap">Expansiones</button>
+                {% endif %}
+                {% if game.remakes %}
+                    <button onclick="switchTab('remakes')" id="btn-remakes" class="pb-2 border-b-2 border-transparent hover:text-white whitespace-nowrap">Remakes</button>
+                {% endif %}
+                {% if game.remasters %}
+                    <button onclick="switchTab('remasters')" id="btn-remasters" class="pb-2 border-b-2 border-transparent hover:text-white whitespace-nowrap">Remasters</button>
+                {% endif %}
+                {% if game.ports %}
+                    <button onclick="switchTab('ports')" id="btn-ports" class="pb-2 border-b-2 border-transparent hover:text-white whitespace-nowrap">Ports</button>
+                {% endif %}
+            </div>
+
+            <div class="relative min-h-[160px]">
+                {% if game.similar_games %}
+                <div id="tab-similar" class="tab-content flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for sim in game.similar_games %}
+                        <a href="{% url 'detail' sim.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if sim.cover %}<img src="https:{{ sim.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ sim.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if game.dlcs %}
+                <div id="tab-dlcs" class="tab-content hidden flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for dlc in game.dlcs %}
+                        <a href="{% url 'detail' dlc.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if dlc.cover %}<img src="https:{{ dlc.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ dlc.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if game.expansions %}
+                <div id="tab-expansions" class="tab-content hidden flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for exp in game.expansions %}
+                        <a href="{% url 'detail' exp.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if exp.cover %}<img src="https:{{ exp.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ exp.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if game.remakes %}
+                <div id="tab-remakes" class="tab-content hidden flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for rem in game.remakes %}
+                        <a href="{% url 'detail' rem.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if rem.cover %}<img src="https:{{ rem.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ rem.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 
-                // Devolvemos el color a los iconos
-                document.getElementById('icon-playing').classList.replace('text-white', 'text-blue-400');
-                document.getElementById('icon-completed').classList.replace('text-white', 'text-yellow-400');
-                document.getElementById('icon-backlog').classList.replace('text-white', 'text-purple-400');
-            });
+                {% if game.remasters %}
+                <div id="tab-remasters" class="tab-content hidden flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for rem in game.remasters %}
+                        <a href="{% url 'detail' rem.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if rem.cover %}<img src="https:{{ rem.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ rem.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if game.ports %}
+                <div id="tab-ports" class="tab-content hidden flex gap-3 overflow-x-auto no-scrollbar absolute inset-0">
+                    {% for port in game.ports %}
+                        <a href="{% url 'detail' port.id %}" class="shrink-0 w-24 group">
+                            <div class="aspect-[3/4] bg-zinc-800 rounded overflow-hidden mb-2 border border-white/5 group-hover:border-indigo-500 transition">
+                                {% if port.cover %}<img src="https:{{ port.cover.url }}" class="w-full h-full object-cover">{% endif %}
+                            </div>
+                            <p class="text-[10px] text-gray-400 truncate group-hover:text-white transition font-bold">{{ port.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
 
-            // 2. Encendemos el botón que acabamos de pulsar
-            const btnActivo = document.getElementById('btn-' + status);
-            const iconoActivo = document.getElementById('icon-' + status);
-            btnActivo.classList.remove('bg-zinc-800');
-            iconoActivo.classList.replace(/text-\w+-400/, 'text-white'); // Quita el color al icono para ponerlo blanco
+        <div>
+            <h2 class="text-lg font-bold text-white mb-4 border-b border-white/10 pb-2">Actividad Reciente</h2>
+            {% if reviews %}
+                <div class="space-y-3">
+                    {% for item in reviews %}
+                    <div class="bg-zinc-900/30 border border-white/5 rounded-lg p-4 hover:bg-zinc-900/80 transition">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-3">
+                                <a href="{% url 'public_profile' item.user.username %}" class="w-6 h-6 rounded-full overflow-hidden border border-white/10">
+                                    {% if item.user.profile.avatar %}
+                                        <img src="{{ item.user.profile.avatar.url }}" class="w-full h-full object-cover">
+                                    {% else %}
+                                        <div class="w-full h-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">{{ item.user.username|slice:":1"|upper }}</div>
+                                    {% endif %}
+                                </a>
+                                <div>
+                                    <a href="{% url 'public_profile' item.user.username %}" class="text-xs font-bold text-white hover:text-indigo-400 transition">{{ item.user.username }}</a>
+                                </div>
+                            </div>
+                            {% if item.rating %}
+                            <div class="flex text-yellow-500 text-[10px]">
+                                {% for i in "x"|rjust:item.rating %}<i class="fas fa-star"></i>{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm text-gray-300">{{ item.review }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-sm">Aún no hay reseñas para este juego.</p>
+            {% endif %}
+        </div>
 
-            if (status === 'playing') btnActivo.classList.add('bg-blue-600');
-            if (status === 'completed') btnActivo.classList.add('bg-yellow-500');
-            if (status === 'backlog') btnActivo.classList.add('bg-purple-600');
+    </div>
+</main>
 
+<form id="status-form" class="hidden">
+    {% csrf_token %}
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => {
+            el.classList.add('hidden');
+        });
+        document.querySelectorAll('button[id^="btn-"]').forEach(el => {
+            el.classList.remove('border-pink-500', 'text-white');
+            el.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        const targetContent = document.getElementById('tab-' + tabId);
+        const targetBtn = document.getElementById('btn-' + tabId);
+        
+        if (targetContent && targetBtn) {
+            targetContent.classList.remove('hidden');
+            targetBtn.classList.remove('border-transparent', 'text-gray-500');
+            targetBtn.classList.add('border-pink-500', 'text-white');
         }
-    })
-    .catch(error => console.error('Error:', error));
     }
+
+    {% if user.is_authenticated %}
+    function updateGameStatus(gameId, status) {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const payload = {
+            game_id: gameId,
+            name: "{{ game.name|escapejs }}",
+            cover_url: "{% if game.cover %}https:{{ game.cover.url }}{% endif %}",
+            status: status,
+            rating: "{% if user_interaction and user_interaction.rating %}{{ user_interaction.rating }}{% endif %}",
+            review: `{% if user_interaction and user_interaction.review %}{{ user_interaction.review|escapejs }}{% endif %}`,
+            favorite: {% if user_interaction and user_interaction.favorite %}true{% else %}false{% endif %}
+        };
+
+        fetch('/api/quick-log/', {
+            method: 'POST',
+            headers: { 
+                'X-CSRFToken': csrftoken, 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if(res.ok) {
+                window.location.reload();
+            } else {
+                alert("Error al actualizar el estado.");
+            }
+        });
+    }
+
+    function toggleGameFavorite(gameId) {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const payload = {
+            game_id: gameId,
+            name: "{{ game.name|escapejs }}",
+            cover_url: "{% if game.cover %}https:{{ game.cover.url }}{% endif %}",
+            status: "{% if user_interaction %}{{ user_interaction.status }}{% endif %}",
+            rating: "{% if user_interaction and user_interaction.rating %}{{ user_interaction.rating }}{% endif %}",
+            review: `{% if user_interaction and user_interaction.review %}{{ user_interaction.review|escapejs }}{% endif %}`,
+            favorite: {% if user_interaction and user_interaction.favorite %}false{% else %}true{% endif %}
+        };
+
+        fetch('/api/quick-log/', {
+            method: 'POST',
+            headers: { 
+                'X-CSRFToken': csrftoken, 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if(res.ok) {
+                window.location.reload();
+            } else {
+                alert("Error al actualizar favoritos.");
+            }
+        });
+    }
+
+    function openQuickLogModalPreloaded() {
+        openQuickLogModal(); 
+        
+        const gameId = {{ game.id }};
+        const gameName = "{{ game.name|escapejs }}";
+        const coverUrl = "{% if game.cover %}https:{{ game.cover.url }}{% endif %}";
+        
+        selectGameForLog(gameId, gameName, coverUrl); 
+    }
+    {% endif %}
 </script>
-{% endif %}
 {% endblock %}

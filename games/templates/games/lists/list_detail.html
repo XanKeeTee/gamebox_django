@@ -1,71 +1,113 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ game_list.name }} - GameBox</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;700;800&display=swap');
-        body { font-family: 'Manrope', sans-serif; background-color: #050505; color: white; }
-    </style>
-</head>
-<body class="min-h-screen selection:bg-indigo-500 selection:text-white">
+{% extends 'games/base.html' %}
 
-    <nav class="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-xl border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <a href="{% url 'public_profile' game_list.user.username %}" class="flex items-center gap-2 font-bold hover:text-indigo-400 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                Volver al perfil de {{ game_list.user.username }}
-            </a>
-            <span class="font-black tracking-tighter text-xl">GAMEBOX</span>
-        </div>
-    </nav>
+{% block title %}{{ lista.name }} por {{ lista.user.username }} - GameBox{% endblock %}
 
-    <div class="max-w-5xl mx-auto px-6 pt-32 pb-20">
-        <div class="text-center mb-16">
-            <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-                {{ game_list.name }}
-            </h1>
-            {% if game_list.description %}
-                <p class="text-xl text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed">{{ game_list.description }}</p>
-            {% endif %}
-            
-            <div class="mt-6 flex items-center justify-center gap-2 text-sm text-gray-500 font-bold uppercase tracking-widest">
-                <span>Creada por {{ game_list.user.username }}</span>
-                <span>•</span>
-                <span>{{ game_list.entries.count }} Juegos</span>
-            </div>
-        </div>
+{% block content %}
 
-        <div class="space-y-4">
-            {% for entry in game_list.entries.all %}
-            <div class="group relative flex gap-4 md:gap-6 bg-zinc-900/40 border border-white/5 p-4 rounded-2xl hover:bg-zinc-900/80 hover:border-white/20 transition duration-300">
-                
-                <div class="absolute -left-3 -top-3 w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center font-black text-sm text-gray-400 shadow-xl group-hover:bg-white group-hover:text-black transition">
-                    {{ forloop.counter }}
-                </div>
+<div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-indigo-900/40 via-purple-900/10 to-transparent pointer-events-none -z-10"></div>
 
-                <a href="{% url 'detail' entry.game.igdb_id %}" class="shrink-0 w-24 md:w-32 aspect-[3/4] rounded-xl overflow-hidden shadow-lg">
-                    <img src="https:{{ entry.game.cover_url }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                </a>
-
-                <div class="flex-1 flex flex-col justify-center">
-                    <a href="{% url 'detail' entry.game.igdb_id %}" class="text-xl md:text-2xl font-black text-white group-hover:text-indigo-400 transition mb-1">{{ entry.game.name }}</a>
-                    
-                    {% if entry.comment %}
-                        <div class="bg-black/20 p-3 rounded-lg border-l-2 border-indigo-500/50 mt-2">
-                            <p class="text-gray-300 italic text-sm">"{{ entry.comment }}"</p>
+<main class="py-12 px-4 md:px-8 max-w-7xl mx-auto min-h-[75vh]">
+    
+    <div class="flex flex-col md:flex-row gap-8 mb-16 border-b border-white/10 pb-12 relative">
+        
+        <div class="flex-1">
+            <div class="flex items-center gap-3 mb-4">
+                <a href="{% url 'public_profile' lista.user.username %}" class="w-8 h-8 rounded-full overflow-hidden border border-white/20 hover:border-indigo-400 transition">
+                    {% if lista.user.profile.avatar %}
+                        <img src="{{ lista.user.profile.avatar.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
+                            {{ lista.user.username|slice:":1"|upper }}
                         </div>
                     {% endif %}
-                </div>
+                </a>
+                <span class="text-sm text-gray-400">
+                    Lista creada por <a href="{% url 'public_profile' lista.user.username %}" class="text-white font-bold hover:text-indigo-400 transition">{{ lista.user.username }}</a>
+                </span>
             </div>
-            {% empty %}
-                <div class="text-center py-20 border border-dashed border-white/10 rounded-3xl">
-                    <p class="text-gray-500">Esta lista está vacía.</p>
-                </div>
-            {% endfor %}
+
+            <h1 class="text-4xl md:text-6xl font-black text-white tracking-tighter mb-6 leading-tight">{{ lista.name }}</h1>
+            
+            {% if lista.description %}
+                <p class="text-gray-300 text-lg leading-relaxed max-w-3xl border-l-4 border-indigo-500 pl-4 bg-white/5 py-2 rounded-r-xl">
+                    {{ lista.description }}
+                </p>
+            {% else %}
+                <p class="text-gray-600 italic">No hay descripción para esta lista.</p>
+            {% endif %}
+
+            <div class="flex items-center gap-4 mt-8 text-xs font-bold uppercase tracking-widest text-gray-500">
+                <span class="bg-black/50 px-3 py-1.5 rounded-lg border border-white/5">
+                    <i class="fas fa-gamepad text-indigo-500 mr-1.5"></i> {{ lista.entries.count|default:"0" }} Juegos
+                </span>
+                <span><i class="fas fa-clock mr-1.5"></i> {{ lista.created_at|date:"d M Y" }}</span>
+            </div>
         </div>
+
+        {% if request.user == lista.user %}
+        <div class="flex md:flex-col gap-3 shrink-0">
+            <a href="{% url 'edit_list' lista.user.username lista.slug %}" class="px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 border border-white/10 shadow-lg hover:scale-105">
+                <i class="fas fa-pen"></i> Editar 
+            </a>
+            <a href="{% url 'delete_list' lista.user.username lista.slug %}" class="px-5 py-2.5 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 border border-red-500/20 shadow-lg hover:scale-105">
+                <i class="fas fa-trash-alt"></i> Eliminar
+            </a>
+        </div>
+        {% endif %}
     </div>
-</body>
-</html>
+
+    <div>
+        {% if lista.entries.all %}
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {% for entry in lista.entries.all %}
+                <div class="group relative">
+                    
+                    {% if request.user == lista.user %}
+                    <form action="{% url 'remove_from_list' lista.id entry.game.igdb_id %}" method="POST" class="absolute top-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        {% csrf_token %}
+                        <button type="submit" class="w-8 h-8 bg-black/60 backdrop-blur-md border border-white/10 text-white hover:bg-red-600 hover:border-red-500 rounded-full flex items-center justify-center transition-all shadow-xl" title="Quitar de la lista">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <div class="absolute -top-3 -left-3 w-8 h-8 bg-zinc-950 border border-white/10 rounded-full flex items-center justify-center text-xs font-black text-white shadow-xl z-20 opacity-0 group-hover:opacity-100 transition duration-300 transform scale-50 group-hover:scale-100">
+                        {{ forloop.counter }}
+                    </div>
+
+                    <a href="{% url 'detail' entry.game.igdb_id %}" class="block aspect-[3/4] rounded-xl overflow-hidden shadow-[0_10px_20px_rgba(0,0,0,0.5)] border border-white/10 group-hover:border-indigo-500 transition duration-500 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] relative group-hover:-translate-y-2">
+                        {% if entry.game.cover_url %}
+                            <img src="{{ entry.game.cover_url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full bg-zinc-800 flex flex-col items-center justify-center p-4 text-center">
+                                <i class="fas fa-gamepad text-3xl text-zinc-700 mb-2"></i>
+                                <span class="text-xs font-bold text-gray-400">{{ entry.game.name }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-4">
+                            <span class="text-white font-bold text-sm leading-tight drop-shadow-md">{{ entry.game.name }}</span>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="flex flex-col items-center justify-center py-20 bg-zinc-900/30 border border-dashed border-white/10 rounded-3xl text-center">
+                <i class="fas fa-ghost text-5xl text-gray-600 mb-4 animate-bounce"></i>
+                <h3 class="text-xl font-bold text-white mb-2">Esta lista está vacía</h3>
+                
+                {% if request.user == lista.user %}
+                    <p class="text-gray-400 mb-6">Añade juegos a esta lista desde la página de cada juego o el buscador.</p>
+                    <a href="{% url 'explore' %}" class="bg-indigo-600 text-white px-6 py-2.5 rounded-full font-bold shadow-lg hover:scale-105 transition">
+                        Buscar juegos
+                    </a>
+                {% else %}
+                    <p class="text-gray-400">El creador aún no ha añadido ningún título aquí.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+</main>
+{% endblock %}

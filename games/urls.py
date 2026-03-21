@@ -31,4 +31,9 @@ urlpatterns = [
     path('game/<int:game_id>/review/', views.save_game_review, name='save_game_review'),
     path('api/quick-search/', views.quick_search_api, name='quick_search_api'),
     path('api/quick-log/', views.quick_log_save, name='quick_log_save'),
+    path('profile/<str:username>/lists/', views.user_lists, name='user_lists'),
+    path('profile/<str:username>/lists/<slug:slug>/edit/', views.edit_list, name='edit_list'),
+    path('profile/<str:username>/lists/<slug:slug>/delete/', views.delete_list, name='delete_list'),
+    path('game/<int:game_id>/add-to-list/', views.add_to_list_view, name='add_to_list'),
+    path('list/<int:list_id>/remove/<int:game_id>/', views.remove_from_list, name='remove_from_list'),
 ]

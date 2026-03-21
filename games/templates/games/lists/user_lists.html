@@ -1,0 +1,90 @@
+{% extends 'games/base.html' %}
+{% block title %}Listas de {{ perfil_usuario.username }} - GameBox{% endblock %}
+
+{% block content %}
+<main class="py-12 px-6 max-w-7xl mx-auto min-h-[75vh]">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 pb-8 border-b border-white/5">
+        <div class="flex items-center gap-6">
+            <a href="{% url 'public_profile' perfil_usuario.username %}" class="w-20 h-20 rounded-full bg-indigo-900 overflow-hidden border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:scale-105 transition block shrink-0">
+                {% if perfil_usuario.profile.avatar %}
+                    <img src="{{ perfil_usuario.profile.avatar.url }}" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-3xl font-black text-white">
+                        {{ perfil_usuario.username|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+            </a>
+            <div>
+                <h1 class="text-3xl font-black text-white mb-1">
+                    {% if request.user == perfil_usuario %}
+                        Mis Listas
+                    {% else %}
+                        Listas de {{ perfil_usuario.username }}
+                    {% endif %}
+                </h1>
+                <p class="text-gray-400 text-sm">
+                    <span class="text-indigo-400 font-bold">{{ listas|length }}</span> listas creadas
+                </p>
+            </div>
+        </div>
+
+        {% if request.user == perfil_usuario %}
+        <div>
+            <a href="{% url 'create_list' %}" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg flex items-center gap-2 hover:scale-105">
+                <i class="fas fa-plus"></i> Nueva Lista
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if listas %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for lista in listas %}
+            <a href="{% url 'list_detail' lista.user.username lista.slug %}" class="block group relative bg-zinc-900/50 border border-white/10 rounded-2xl p-6 hover:bg-zinc-800 hover:border-indigo-500/50 transition duration-300 shadow-lg hover:shadow-indigo-500/10 h-full flex flex-col">
+                
+                <h2 class="text-xl font-bold text-white group-hover:text-indigo-400 transition mb-2 pr-8">{{ lista.name }}</h2>
+                
+                {% if lista.description %}
+                    <p class="text-sm text-gray-500 line-clamp-2 mb-4 flex-grow">{{ lista.description }}</p>
+                {% else %}
+                    <p class="text-sm text-gray-600 italic mb-4 flex-grow">Sin descripción.</p>
+                {% endif %}
+                
+                <div class="flex items-center justify-between border-t border-white/5 pt-4 mt-auto">
+                    <span class="text-xs font-bold text-gray-400 bg-black/50 px-3 py-1.5 rounded-lg border border-white/5">
+                        <i class="fas fa-gamepad mr-1 text-indigo-500"></i>
+                        {{ lista.entries.count|default:"0" }} juegos
+                    </span>
+                    <span class="text-[10px] text-gray-600 uppercase font-bold tracking-wider">
+                        Hace {{ lista.created_at|timesince }}
+                    </span>
+                </div>
+
+                <div class="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-indigo-400">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="flex flex-col items-center justify-center py-20 bg-zinc-900/20 border border-dashed border-white/10 rounded-3xl text-center">
+            <div class="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <i class="fas fa-list-ul text-4xl text-gray-600"></i>
+            </div>
+            
+            {% if request.user == perfil_usuario %}
+                <h3 class="text-2xl font-bold text-white mb-2">Aún no tienes listas</h3>
+                <p class="text-gray-400 mb-8 max-w-md">Organiza tus sagas favoritas, los juegos que te quieres pasar este año o tu top 10 histórico.</p>
+                <a href="{% url 'create_list' %}" class="bg-white text-black px-8 py-3 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition">
+                    Crear mi primera lista
+                </a>
+            {% else %}
+                <h3 class="text-2xl font-bold text-white mb-2">{{ perfil_usuario.username }} no ha creado listas</h3>
+                <p class="text-gray-400">Parece que este usuario prefiere tener todo desorganizado.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</main>
+{% endblock %}

@@ -6,9 +6,7 @@
     <title>{% block title %}GameBox{% endblock %}</title>
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
         body { 
             background-color: #09090b; 
@@ -25,9 +23,8 @@
     </div>
 
     <nav class="sticky top-0 z-40 w-full backdrop-blur-xl bg-zinc-950/80 border-b border-white/5 shadow-2xl">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4 md:gap-8">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
             
-            <!-- LOGO Y ENLACES IZQUIERDA -->
             <div class="flex items-center gap-8 shrink-0">
                 <a href="{% url 'index' %}" class="flex items-center gap-3 text-2xl font-black text-white hover:text-indigo-400 transition">
                     <img src="{% static 'favicon.ico' %}" alt="Logo GameBox" class="w-8 h-8 rounded-xl object-cover shadow-lg shadow-indigo-500/20">   
@@ -35,14 +32,14 @@
                 </a>
                 
                 <div class="hidden md:flex items-center gap-6 text-sm font-bold text-gray-400">
+                    <a href="{% url 'index' %}" class="hover:text-white transition">Inicio</a>
                     <a href="{% url 'explore' %}" class="hover:text-white transition">Explorar</a>
                     <a href="{% url 'community' %}" class="hover:text-white transition">Comunidad</a>
                 </div>
             </div>
 
-            <!-- BUSCADOR EXPANDIBLE -->
             <div class="flex-1 flex justify-end items-center">
-                <form action="{% url 'search' %}" method="GET" class="relative group mr-2 md:mr-4">
+                <form action="{% url 'search' %}" method="GET" class="relative group">
                     <input type="text" name="q" placeholder="Buscar juegos..." 
                            class="w-10 h-10 pl-10 pr-4 rounded-full bg-transparent border border-transparent text-white text-sm focus:w-48 md:focus:w-72 focus:bg-zinc-900/80 focus:border-white/10 focus:outline-none transition-all duration-300 ease-in-out cursor-pointer focus:cursor-text placeholder-transparent focus:placeholder-gray-500">
                     <div class="absolute left-0 top-0 w-10 h-10 flex items-center justify-center pointer-events-none text-gray-400 group-focus-within:text-indigo-400 transition-colors">
@@ -51,24 +48,19 @@
                 </form>
             </div>
 
-            <!-- BOTONES DERECHA -->
-            <div class="flex items-center gap-3 md:gap-4 shrink-0">
-                
+            <div class="flex items-center gap-3 shrink-0">
                 {% if user.is_authenticated %}
                     
-                    <!-- BOTÓN REGISTRAR MEJORADO -->
                     <button onclick="openQuickLogModal()" class="hidden md:flex items-center gap-2 px-5 py-2 rounded-full border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500 hover:text-white font-bold text-sm transition-all duration-300 shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_25px_rgba(99,102,241,0.4)] hover:scale-105">
                         <i class="fas fa-plus"></i> <span class="tracking-wide">Registrar</span>
                     </button>
 
-                    <!-- CAMPANA NOTIFICACIONES -->
                     <div class="relative" id="notifications-menu-container">
-                        <button onclick="toggleNotificationsMenu()" class="text-gray-400 hover:text-white transition relative ml-1 md:ml-2 focus:outline-none">
+                        <button onclick="toggleNotificationsMenu()" class="text-gray-400 hover:text-white transition relative ml-1 focus:outline-none">
                             <i class="fas fa-bell text-lg"></i>
                             <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse border-2 border-zinc-950"></span>
                         </button>
 
-                        <!-- Menú Desplegable de Notificaciones -->
                         <div id="notifications-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-zinc-900 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-2 z-50 transform origin-top-right transition-all">
                             <div class="px-4 py-3 border-b border-white/5 mb-2 flex justify-between items-center bg-black/20">
                                 <p class="text-sm font-bold text-white">Notificaciones</p>
@@ -76,13 +68,10 @@
                             </div>
                             
                             <div class="max-h-72 overflow-y-auto no-scrollbar px-2 space-y-1">
-                                <!-- Suponiendo que tu modelo de notificaciones está relacionado con user (ajusta si tus campos se llaman distinto) -->
                                 {% if user.notification_set.all %}
                                     {% for notif in user.notification_set.all|slice:":5" %}
                                     <a href="#" class="block px-3 py-3 rounded-xl hover:bg-white/5 transition border border-transparent hover:border-white/5">
-                                        <p class="text-xs text-gray-300 leading-snug">
-                                            {{ notif.message }}
-                                        </p>
+                                        <p class="text-xs text-gray-300 leading-snug">{{ notif.message }}</p>
                                         <p class="text-[10px] text-indigo-400 mt-1.5 font-semibold">{{ notif.created_at|timesince }} ago</p>
                                     </a>
                                     {% endfor %}
@@ -95,16 +84,13 @@
                             </div>
 
                             <div class="border-t border-white/5 mt-2 pt-2 px-2">
-                                <a href="{% url 'notifications' %}" class="block text-center text-xs font-bold text-gray-400 hover:text-white transition py-2 rounded-lg hover:bg-white/5">
-                                    Ver todas las notificaciones
-                                </a>
+                                <a href="{% url 'notifications' %}" class="block text-center text-xs font-bold text-gray-400 hover:text-white transition py-2 rounded-lg hover:bg-white/5">Ver todas las notificaciones</a>
                             </div>
                         </div>
                     </div>
 
-                    <!-- MENÚ DE USUARIO -->
                     <div class="relative" id="profile-menu-container">
-                        <button onclick="toggleProfileMenu()" class="flex items-center gap-2 focus:outline-none transform hover:scale-105 transition ml-2">
+                        <button onclick="toggleProfileMenu()" class="flex items-center gap-2 focus:outline-none transform hover:scale-105 transition ml-1">
                             <div class="w-9 h-9 rounded-full bg-indigo-900 flex items-center justify-center font-bold text-white overflow-hidden border border-white/10 hover:border-indigo-400 transition-all shadow-lg ring-2 ring-transparent hover:ring-indigo-500/30">
                                 {% if user.profile.avatar %}
                                     <img src="{{ user.profile.avatar.url }}" class="w-full h-full object-cover">
@@ -127,6 +113,14 @@
                             <a href="{% url 'profile' %}" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
                                 <i class="fas fa-user text-indigo-400 w-4 text-center"></i> Mi Perfil
                             </a>
+
+                            <a href="{% url 'create_list' %}" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
+                                <i class="fas fa-list-ul text-green-400 w-4 text-center"></i> Crear Lista
+                            </a>
+                            
+                            <a href="{% url 'user_lists' user.username %}" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
+                                <i class="fas fa-layer-group text-yellow-400 w-4 text-center"></i> Mis Listas
+                            </a>
                             
                             <a href="#" class="block px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition flex items-center gap-3">
                                 <i class="fas fa-cog text-gray-400 w-4 text-center"></i> Ajustes
@@ -135,9 +129,7 @@
                             <div class="border-t border-white/5 mt-2 pt-2">
                                 <form action="{% url 'logout' %}" method="post" style="display: inline;">
                                     {% csrf_token %}
-                                    <button type="submit" class="w-full text-left block px-4 py-2 text-gray-400 hover:text-red-400 font-bold text-sm transition">
-                                        Cerrar Sesión
-                                    </button>
+                                    <button type="submit" class="w-full text-left block px-4 py-2 text-gray-400 hover:text-red-400 font-bold text-sm transition">Cerrar Sesión</button>
                                 </form>
                             </div>
                         </div>
@@ -170,67 +162,86 @@
     <div id="quick-log-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
         <form><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"></form>
 
-        <div class="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden relative">
-            <button onclick="closeQuickLogModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+        <div class="bg-[#1c1d21] rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden relative">
+            <button onclick="closeQuickLogModal()" class="absolute top-5 right-6 text-gray-400 hover:text-white z-10">
                 <i class="fas fa-times text-xl"></i>
             </button>
 
-            <div id="ql-step-1" class="p-6">
-                <h3 class="text-xl font-black mb-4">Añadir a mi diario</h3>
+            <div id="ql-step-1" class="p-8">
+                <h3 class="text-2xl font-black mb-6 text-white">Añadir al Diario</h3>
                 <div class="relative">
-                    <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
-                    <input type="text" id="ql-search-input" onkeyup="handleQuickSearch(event)" placeholder="Escribe el nombre del juego..." class="w-full bg-black border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500">
+                    <i class="fas fa-search absolute left-4 top-4 text-gray-500"></i>
+                    <input type="text" id="ql-search-input" onkeyup="handleQuickSearch(event)" placeholder="Escribe el nombre del juego..." class="w-full bg-[#141518] border border-white/5 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-indigo-500">
                 </div>
-                <div id="ql-results" class="mt-4 space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-                    </div>
+                <div id="ql-results" class="mt-4 space-y-2 max-h-80 overflow-y-auto no-scrollbar">
+                </div>
             </div>
 
-            <div id="ql-step-2" class="hidden p-6">
-                <div class="flex items-center gap-4 border-b border-white/5 pb-4 mb-4">
-                    <img id="ql-selected-cover" src="" class="w-12 h-16 object-cover rounded shadow-lg border border-white/10">
-                    <div>
-                        <h4 class="font-bold text-white" id="ql-selected-name">Nombre del juego</h4>
-                        <button onclick="resetQuickLog()" class="text-xs font-bold text-indigo-400 hover:text-indigo-300">Cambiar juego</button>
-                    </div>
+            <div id="ql-step-2" class="hidden">
+                <div class="px-8 py-5 border-b border-white/5">
+                    <h3 class="text-2xl font-bold text-white" id="ql-selected-name"></h3>
                 </div>
 
                 <form id="ql-form" onsubmit="submitQuickLog(event)">
-                    <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-[180px_1fr] gap-8">
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Estado</label>
-                            <select id="ql-status" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-                                <option value="completed">Completado</option>
-                                <option value="playing">Jugando ahora</option>
-                                <option value="backlog">Añadir a pendientes</option>
-                                <option value="dropped">Abandonado</option>
-                            </select>
+                            <img id="ql-selected-cover" src="" class="w-full aspect-[3/4] object-cover rounded shadow-lg mb-4 bg-zinc-800">
+                            
+                            <input type="hidden" id="ql-status" value="completed">
+                            <div class="flex flex-col gap-1 mb-4">
+                                <button type="button" onclick="setQlStatus('completed')" id="ql-btn-completed" class="ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#1cae53] text-white flex justify-center items-center gap-2"><i class="fas fa-check"></i> Completado</button>
+                                <button type="button" onclick="setQlStatus('playing')" id="ql-btn-playing" class="ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#27292e] text-gray-300 hover:bg-[#32353b] transition flex justify-center items-center gap-2"><i class="fas fa-play"></i> Jugando</button>
+                                <button type="button" onclick="setQlStatus('backlog')" id="ql-btn-backlog" class="ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#27292e] text-gray-300 hover:bg-[#32353b] transition flex justify-center items-center gap-2"><i class="fas fa-layer-group"></i> Pendiente</button>
+                                <button type="button" onclick="setQlStatus('dropped')" id="ql-btn-dropped" class="ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#27292e] text-gray-300 hover:bg-[#32353b] transition flex justify-center items-center gap-2"><i class="fas fa-gift"></i> Abandonado</button>
+                            </div>
+
+                            <input type="hidden" id="ql-is-favorite" value="false">
+                            <button type="button" id="ql-like-btn" onclick="toggleQlLike()" class="w-full py-1.5 rounded text-sm font-bold bg-transparent text-gray-400 hover:text-pink-500 transition flex justify-center items-center gap-2">Like <i class="fas fa-heart"></i></button>
                         </div>
+
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Puntuación</label>
-                            <select id="ql-rating" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-yellow-500">
-                                <option value="">Sin nota</option>
-                                <option value="1">1 - Horrible</option>
-                                <option value="2">2 - Malo</option>
-                                <option value="3">3 - Mediocre</option>
-                                <option value="4">4 - Flojo</option>
-                                <option value="5">5 - Regular</option>
-                                <option value="6">6 - Aceptable</option>
-                                <option value="7">7 - Bueno</option>
-                                <option value="8">8 - Muy bueno</option>
-                                <option value="9">9 - Excelente</option>
-                                <option value="10">10 - Obra maestra</option>
-                            </select>
+                            <div class="grid grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-2">Rating</label>
+                                    <input type="hidden" id="ql-rating" value="0">
+                                    <div class="flex text-2xl text-[#27292e] cursor-pointer" id="ql-star-container">
+                                        <i class="fas fa-star hover:text-pink-500 transition" onclick="setQlRating(2)" data-val="2"></i>
+                                        <i class="fas fa-star hover:text-pink-500 transition" onclick="setQlRating(4)" data-val="4"></i>
+                                        <i class="fas fa-star hover:text-pink-500 transition" onclick="setQlRating(6)" data-val="6"></i>
+                                        <i class="fas fa-star hover:text-pink-500 transition" onclick="setQlRating(8)" data-val="8"></i>
+                                        <i class="fas fa-star hover:text-pink-500 transition" onclick="setQlRating(10)" data-val="10"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-400 mb-2">Platform</label>
+                                    <select class="w-full bg-[#27292e] border border-transparent rounded p-2 text-sm text-gray-300 focus:outline-none">
+                                        <option>Select release platform...</option>
+                                        <option>PC</option>
+                                        <option>PlayStation</option>
+                                        <option>Xbox</option>
+                                        <option>Nintendo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="block text-sm text-gray-400 mb-2">Review</label>
+                                <textarea id="ql-review" rows="5" placeholder="What'd you think..." class="w-full bg-[#141518] border border-white/5 rounded p-3 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="ql-spoilers" class="w-4 h-4 rounded bg-[#141518] border-white/5 text-pink-500 focus:ring-pink-500 focus:ring-offset-[#1c1d21]">
+                                <label for="ql-spoilers" class="text-sm text-gray-400">Contains spoilers</label>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="mb-6">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Reseña (Opcional)</label>
-                        <textarea id="ql-review" rows="3" placeholder="¿Qué te ha parecido el juego?" class="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+                    <div class="px-8 py-4 border-t border-white/5 flex justify-end items-center bg-[#17181c]">
+                        <div class="flex gap-3">
+                            <button type="button" onclick="closeQuickLogModal()" class="px-6 py-2 rounded font-bold text-white bg-[#4e5b7c] hover:bg-[#38435d] transition">Cancel</button>
+                            <button type="submit" class="px-6 py-2 rounded font-bold text-white bg-[#e33767] hover:bg-[#c42c55] transition">Create Log</button>
+                        </div>
                     </div>
-
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl transition shadow-lg flex justify-center items-center gap-2">
-                        <i class="fas fa-save"></i> Guardar en mi Diario
-                    </button>
                 </form>
             </div>
         </div>
@@ -240,20 +251,30 @@
     {% block scripts %}{% endblock %}
 
     <script>
-        // Lógica de menús desplegables
         function toggleProfileMenu() {
             document.getElementById('profile-dropdown').classList.toggle('hidden');
+            document.getElementById('notifications-dropdown')?.classList.add('hidden');
+        }
+
+        function toggleNotificationsMenu() {
+            document.getElementById('notifications-dropdown').classList.toggle('hidden');
+            document.getElementById('profile-dropdown')?.classList.add('hidden');
         }
 
         document.addEventListener('click', function(event) {
-            const container = document.getElementById('profile-menu-container');
-            const menu = document.getElementById('profile-dropdown');
-            if (container && !container.contains(event.target) && !menu.classList.contains('hidden')) {
-                menu.classList.add('hidden');
+            const profileContainer = document.getElementById('profile-menu-container');
+            const profileMenu = document.getElementById('profile-dropdown');
+            if (profileContainer && !profileContainer.contains(event.target) && !profileMenu?.classList.contains('hidden')) {
+                profileMenu.classList.add('hidden');
+            }
+
+            const notifContainer = document.getElementById('notifications-menu-container');
+            const notifMenu = document.getElementById('notifications-dropdown');
+            if (notifContainer && !notifContainer.contains(event.target) && !notifMenu?.classList.contains('hidden')) {
+                notifMenu.classList.add('hidden');
             }
         });
 
-        // Lógica de LIKES global
         function toggleLike(btn, id) {
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
             fetch(`/review/${id}/like/`, {
@@ -267,15 +288,16 @@
                 const svg = btn.querySelector('svg');
                 if(data.liked) {
                     btn.classList.replace('text-gray-500', 'text-pink-500');
+                    btn.classList.remove('hover:text-pink-400');
                     svg.setAttribute('fill', 'currentColor');
                 } else {
                     btn.classList.replace('text-pink-500', 'text-gray-500');
+                    btn.classList.add('hover:text-pink-400');
                     svg.setAttribute('fill', 'none');
                 }
             });
         }
 
-        // LÓGICA DEL QUICK LOG MODAL
         {% if user.is_authenticated %}
         let qlSearchTimeout = null;
         let qlSelectedGame = null;
@@ -297,6 +319,30 @@
             document.getElementById('ql-search-input').value = '';
             document.getElementById('ql-results').innerHTML = '';
             document.getElementById('ql-form').reset();
+            
+            setQlStatus('completed');
+            setQlRating(0);
+            document.getElementById('ql-spoilers').checked = false;
+            
+            const likeInput = document.getElementById('ql-is-favorite');
+            const likeBtn = document.getElementById('ql-like-btn');
+            if (likeInput && likeBtn) {
+                likeInput.value = 'false';
+                likeBtn.classList.replace('text-pink-500', 'text-gray-400');
+            }
+        }
+
+        function toggleQlLike() {
+            const input = document.getElementById('ql-is-favorite');
+            const btn = document.getElementById('ql-like-btn');
+            
+            if (input.value === 'false') {
+                input.value = 'true';
+                btn.classList.replace('text-gray-400', 'text-pink-500');
+            } else {
+                input.value = 'false';
+                btn.classList.replace('text-pink-500', 'text-gray-400');
+            }
         }
 
         function handleQuickSearch(e) {
@@ -322,9 +368,9 @@
                     }
 
                     resultsDiv.innerHTML = data.games.map(g => `
-                        <div onclick="selectGameForLog(${g.id}, '${g.name.replace(/'/g, "\\'")}', '${g.cover_url}')" class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl cursor-pointer transition border border-transparent hover:border-indigo-500/30">
+                        <div onclick="selectGameForLog(${g.id}, '${g.name.replace(/'/g, "\\'")}', '${g.cover_url}', '${g.year || ''}')" class="flex items-center gap-3 p-2 hover:bg-[#27292e] rounded-xl cursor-pointer transition border border-transparent">
                             <div class="w-10 h-14 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
-                                ${g.cover_url ? `<img src="https:${g.cover_url}" class="w-full h-full object-cover">` : '<div class="flex items-center justify-center h-full text-xs">🎮</div>'}
+                                ${g.cover_url ? `<img src="${g.cover_url.startsWith('http') ? '' : 'https:'}${g.cover_url}" class="w-full h-full object-cover">` : '<div class="flex items-center justify-center h-full text-xs">🎮</div>'}
                             </div>
                             <div>
                                 <h4 class="font-bold text-sm text-white">${g.name}</h4>
@@ -335,36 +381,76 @@
                 } catch (error) {
                     resultsDiv.innerHTML = '<div class="text-center text-red-500 py-4">Error al buscar</div>';
                 }
-            }, 400); // 400ms debounce
+            }, 400);
         }
 
-        function selectGameForLog(id, name, cover) {
+        function selectGameForLog(id, name, cover, year) {
             qlSelectedGame = { id, name, cover };
             document.getElementById('ql-step-1').classList.add('hidden');
             document.getElementById('ql-step-2').classList.remove('hidden');
             
-            document.getElementById('ql-selected-name').innerText = name;
-            document.getElementById('ql-selected-cover').src = cover ? 'https:' + cover : '';
-            // Si no tiene cover, lo ocultamos para que no salga la imagen rota
-            document.getElementById('ql-selected-cover').style.display = cover ? 'block' : 'none';
+            const titleHtml = year ? `${name} <span class="text-gray-500 font-normal text-lg ml-2">${year}</span>` : name;
+            document.getElementById('ql-selected-name').innerHTML = titleHtml;
+            
+            const coverEl = document.getElementById('ql-selected-cover');
+            if (cover) {
+                coverEl.src = cover.startsWith('http') ? cover : 'https:' + cover;
+                coverEl.style.display = 'block';
+            } else {
+                coverEl.style.display = 'none';
+            }
+        }
+
+        function setQlStatus(status) {
+            document.getElementById('ql-status').value = status;
+            const btns = document.querySelectorAll('.ql-status-btn');
+            btns.forEach(b => {
+                b.className = 'ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#27292e] text-gray-300 hover:bg-[#32353b] transition flex justify-center items-center gap-2';
+            });
+            const selected = document.getElementById('ql-btn-' + status);
+            if(status === 'completed') selected.className = 'ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#1cae53] text-white flex justify-center items-center gap-2';
+            if(status === 'playing') selected.className = 'ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#38435d] text-white flex justify-center items-center gap-2';
+            if(status === 'backlog') selected.className = 'ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#4e5b7c] text-white flex justify-center items-center gap-2';
+            if(status === 'dropped') selected.className = 'ql-status-btn w-full py-1.5 rounded text-sm font-bold bg-[#e33767] text-white flex justify-center items-center gap-2';
+        }
+
+        function setQlRating(val) {
+            document.getElementById('ql-rating').value = val;
+            const stars = document.getElementById('ql-star-container').children;
+            for(let i=0; i<stars.length; i++) {
+                if(parseInt(stars[i].dataset.val) <= val) {
+                    stars[i].classList.add('text-pink-500');
+                    stars[i].classList.remove('text-[#27292e]');
+                } else {
+                    stars[i].classList.remove('text-pink-500');
+                    stars[i].classList.add('text-[#27292e]');
+                }
+            }
         }
 
         async function submitQuickLog(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             btn.disabled = true;
 
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             
+            let finalCoverUrl = '';
+            if (qlSelectedGame.cover) {
+                finalCoverUrl = qlSelectedGame.cover.startsWith('http') ? qlSelectedGame.cover : 'https:' + qlSelectedGame.cover;
+            }
+
             const payload = {
                 game_id: qlSelectedGame.id,
                 name: qlSelectedGame.name,
-                cover_url: qlSelectedGame.cover ? 'https:' + qlSelectedGame.cover : '',
+                cover_url: finalCoverUrl,
                 status: document.getElementById('ql-status').value,
                 rating: document.getElementById('ql-rating').value,
-                review: document.getElementById('ql-review').value
+                review: document.getElementById('ql-review').value,
+                spoilers: document.getElementById('ql-spoilers').checked,
+                favorite: document.getElementById('ql-is-favorite').value === 'true'
             };
 
             try {
@@ -378,20 +464,18 @@
                 });
 
                 if (res.ok) {
-                    // Recargamos la página para que la nueva reseña aparezca en el Feed
                     window.location.reload();
                 } else {
-                    alert('Hubo un error al guardar la reseña.');
+                    alert('Error al guardar.');
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             } catch (error) {
-                console.error(error);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
-        {% endif%}
+        {% endif %}
     </script>
 </body>
 </html>

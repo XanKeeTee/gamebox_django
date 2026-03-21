@@ -1,49 +1,82 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <title>Añadir a lista</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>body { background-color: #050505; color: white; font-family: sans-serif; }</style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-zinc-900 border border-white/10 p-8 rounded-3xl shadow-2xl">
-        
-        <h2 class="text-2xl font-bold mb-2 text-center">Añadir a Lista</h2>
-        <p class="text-center text-gray-400 mb-6">Estás añadiendo <span class="text-indigo-400 font-bold">{{ game.name }}</span></p>
+{% extends 'games/base.html' %}
 
-        <form method="post" class="space-y-6">
-            {% csrf_token %}
-            
-            <div>
-                <label class="block text-sm font-bold text-gray-400 mb-2">Elige una lista</label>
-                <select name="list_id" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500">
-                    {% for list in my_lists %}
-                        <option value="{{ list.id }}">{{ list.name }}</option>
-                    {% empty %}
-                        <option disabled>No tienes listas creadas</option>
-                    {% endfor %}
-                </select>
-            </div>
+{% block title %}Añadir a lista - GameBox{% endblock %}
 
-            <div>
-                <label class="block text-sm font-bold text-gray-400 mb-2">Comentario (Opcional)</label>
-                <textarea name="comment" rows="2" placeholder="¿Por qué está en esta lista?" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500"></textarea>
-            </div>
+{% block content %}
+<!-- FONDO CON DESENFOQUE DINÁMICO -->
+<div class="fixed inset-0 z-[-1]">
+    {% if juego.cover_url %}
+        <img src="{{ juego.cover_url }}" class="w-full h-full object-cover opacity-10 blur-3xl scale-110">
+    {% endif %}
+    <div class="absolute inset-0 bg-[#09090b]/80"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#09090b]"></div>
+</div>
 
-            <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200 transition">Guardar</button>
-            
-            {% if not my_lists %}
-                <div class="text-center pt-2">
-                    <a href="{% url 'create_list' %}" class="text-sm text-indigo-400 font-bold hover:underline">Crear lista nueva primero</a>
-                </div>
+<main class="max-w-6xl mx-auto px-6 py-12 md:py-20 min-h-[80vh] flex flex-col md:flex-row gap-12 items-center justify-center relative z-10">
+    
+    <!-- LATERAL: PORTADA Y TÍTULO -->
+    <div class="w-full md:w-1/3 flex flex-col items-center md:items-end gap-6">
+        <div class="w-56 md:w-full max-w-[280px] aspect-[3/4] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 bg-zinc-900 transition-transform hover:scale-[1.02] duration-500">
+            {% if juego.cover_url %}
+                <img src="{{ juego.cover_url }}" class="w-full h-full object-cover">
+            {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-zinc-800 text-4xl">🎮</div>
             {% endif %}
-        </form>
-        
-        <div class="text-center mt-4">
-            <a href="{% url 'detail' game.igdb_id %}" class="text-sm text-gray-500 hover:text-white">Cancelar</a>
+        </div>
+        <div class="text-center md:text-right">
+            <h1 class="text-3xl md:text-4xl font-black text-white leading-tight tracking-tighter">{{ juego.name }}</h1>
+            <p class="text-indigo-400 font-bold text-sm uppercase tracking-widest mt-2">Añadir a colección</p>
         </div>
     </div>
-</body>
-</html>
+
+    <!-- PANEL DE SELECCIÓN (ESTILO GAMEBOX) -->
+    <div class="w-full md:w-1/2 bg-zinc-900/40 backdrop-blur-2xl border border-white/5 rounded-3xl p-8 md:p-10 shadow-2xl">
+        <h2 class="text-xl font-bold text-white mb-8 flex items-center gap-3">
+            <i class="fas fa-layer-group text-indigo-500"></i>
+            Selecciona una lista
+        </h2>
+
+        {% if listas %}
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            <div class="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar pr-2">
+                {% for lista in listas %}
+                <label class="relative flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-indigo-500/30 cursor-pointer transition-all group has-[:checked]:bg-indigo-600/10 has-[:checked]:border-indigo-500">
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex items-center justify-center">
+                            <input type="radio" name="lista_id" value="{{ lista.id }}" required class="peer appearance-none w-5 h-5 border-2 border-zinc-700 rounded-full checked:border-indigo-500 transition-all cursor-pointer">
+                            <div class="absolute w-2.5 h-2.5 bg-indigo-500 rounded-full opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"></div>
+                        </div>
+                        <div>
+                            <span class="block font-bold text-zinc-100 group-hover:text-white transition">{{ lista.name }}</span>
+                            <span class="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">{{ lista.entries.count|default:"0" }} juegos pasados</span>
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/5">
+                <a href="javascript:history.back()" class="px-6 py-3.5 rounded-xl font-bold text-zinc-400 hover:text-white bg-zinc-800/50 hover:bg-zinc-800 transition flex-1 text-center border border-white/5">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-3.5 rounded-xl font-bold text-white bg-pink-600 hover:bg-pink-500 shadow-[0_10px_20px_rgba(227,55,103,0.2)] transition flex-1 flex justify-center items-center gap-2 hover:scale-[1.02] active:scale-95">
+                    <i class="fas fa-plus"></i> Añadir a Lista
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <!-- ESTADO VACÍO CON IDENTIDAD GAMEBOX -->
+        <div class="text-center py-10 bg-black/20 rounded-2xl border border-dashed border-white/10">
+            <div class="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
+                <i class="fas fa-folder-open text-2xl text-indigo-400"></i>
+            </div>
+            <p class="text-zinc-400 mb-6 text-sm">No hemos encontrado ninguna lista en tu perfil.</p>
+            <a href="{% url 'create_list' %}" class="inline-block bg-white text-black px-8 py-3 rounded-full font-bold shadow-xl hover:scale-105 transition">
+                Crear mi primera lista
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

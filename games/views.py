@@ -67,38 +67,68 @@ def index(request):
         'recent_lists': recent_lists
     })
 
-
 def detail(request, game_id):
-    """
-    Carga la ficha de un juego usando IGDBService y comprueba su estado local.
-    """
-    igdb = IGDBService()
+    from .models import Game, UserGame
+    import requests
+    import datetime
+
+    service = IGDBService()
     
-    game = igdb.get_game_detail(game_id) 
+    query = (
+        f'fields name, cover.url, artworks.url, first_release_date, total_rating, total_rating_count, summary, '
+        f'genres.name, platforms.name, involved_companies.company.name, involved_companies.developer, '
+        f'dlcs.name, dlcs.cover.url, similar_games.name, similar_games.cover.url, '
+        f'expansions.name, expansions.cover.url, remakes.name, remakes.cover.url, '
+        f'remasters.name, remasters.cover.url, ports.name, ports.cover.url; '
+        f'where id = {game_id};'
+    )
     
+    response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query)
+    game = response.json()[0] if response.status_code == 200 and response.json() else None
+
     if not game:
-        from django.http import Http404
-        raise Http404("El juego no existe en la base de datos de IGDB")
+        return redirect('index')
 
-    user_status = None
-    user_review = ""
+    if 'first_release_date' in game:
+        game['first_release_date'] = datetime.datetime.fromtimestamp(game['first_release_date'])
 
-    if request.user.is_authenticated:
-        interaccion = UserGame.objects.filter(
-            user=request.user, 
-            game__igdb_id=game_id
-        ).first()
+    if 'cover' in game:
+        game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
+    if 'artworks' in game:
+        game['artworks'][0]['url'] = game['artworks'][0]['url'].replace('t_thumb', 't_1080p')
+    
+    for category in ['dlcs', 'similar_games', 'expansions', 'remakes', 'remasters', 'ports']:
+        if category in game:
+            for item in game[category]:
+                if 'cover' in item:
+                    item['cover']['url'] = item['cover']['url'].replace('t_thumb', 't_cover_small')
 
-        if interaccion:
-            user_status = interaccion.status
-            user_review = interaccion.review
+    developers = []
+    if 'involved_companies' in game:
+        developers = [comp['company']['name'] for comp in game['involved_companies'] if comp.get('developer')]
 
-    context = {
+    local_game = Game.objects.filter(igdb_id=game_id).first()
+    reviews = []
+    stats = {'plays': 0, 'playing': 0, 'backlogs': 0, 'dropped': 0}
+    user_interaction = None
+
+    if local_game:
+        reviews = UserGame.objects.filter(game=local_game).exclude(review__isnull=True).exclude(review='').select_related('user__profile').order_by('-updated_at')
+        stats['plays'] = UserGame.objects.filter(game=local_game, status='completed').count()
+        stats['playing'] = UserGame.objects.filter(game=local_game, status='playing').count()
+        stats['backlogs'] = UserGame.objects.filter(game=local_game, status='backlog').count()
+        stats['dropped'] = UserGame.objects.filter(game=local_game, status='dropped').count()
+
+        if request.user.is_authenticated:
+            user_interaction = UserGame.objects.filter(user=request.user, game=local_game).first()
+
+    return render(request, 'games/catalog/detail.html', {
         'game': game,
-        'user_status': user_status,
-        'user_review': user_review,
-    }
-    return render(request, 'games/catalog/detail.html', context)
+        'developers': developers,
+        'reviews': reviews,
+        'stats': stats,
+        'user_interaction': user_interaction
+    })
 
 @login_required(login_url="/admin/login/")
 def add_to_library(request, game_id, status):
@@ -350,54 +380,69 @@ def create_list(request):
 
 
 def list_detail(request, username, slug):
-    game_list = get_object_or_404(GameList, user__username=username, slug=slug)
-    return render(request, "games/lists/list_detail.html", {"game_list": game_list})
+    mi_lista = get_object_or_404(GameList, user__username=username, slug=slug)
+    
+    return render(request, 'games/lists/list_detail.html', {
+        'lista': mi_lista
+    })
 
 
-@login_required(login_url="login")
+@login_required
 def add_to_list_view(request, game_id):
-    game = Game.objects.filter(igdb_id=game_id).first()
+    from .models import GameList, ListEntry, Game
+    import requests
+    from django.utils.text import slugify
 
-    if not game:
+    # Buscamos las listas del usuario
+    listas = GameList.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Intentamos obtener el juego de nuestra DB local
+    juego = Game.objects.filter(igdb_id=game_id).first()
+    
+    # Si no existe localmente, lo traemos de IGDB y lo guardamos
+    if not juego:
         service = IGDBService()
-        game_data = service.get_game_detail(game_id)
-
-        if game_data:
-            # Aseguramos la URL de la portada en alta calidad
-            cover_url = (
-                game_data.get("cover", {})
-                .get("url", "")
-                .replace("t_thumb", "t_cover_big")
-            )
-
-            game = Game.objects.create(
-                igdb_id=game_data["id"],
-                name=game_data["name"],
-                slug=game_data.get("slug", f"game-{game_id}"),
+        query_string = f'fields name, cover.url; where id = {game_id};'
+        response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query_string)
+        
+        if response.status_code == 200 and response.json():
+            game_data = response.json()[0]
+            nombre = game_data['name']
+            
+            # Arreglamos la URL de la portada (añadiendo https: y mejorando calidad)
+            cover_url = ""
+            if 'cover' in game_data:
+                raw_url = game_data['cover']['url']
+                cover_url = f"https:{raw_url.replace('t_thumb', 't_cover_big')}"
+                
+            slug_generado = slugify(f"{nombre}-{game_id}")
+            juego = Game.objects.create(
+                igdb_id=game_id,
+                name=nombre,
                 cover_url=cover_url,
+                slug=slug_generado
             )
         else:
-            return HttpResponseNotFound("Juego no encontrado")
+            return redirect('index')
+    else:
+        # Si el juego ya existía en la DB, nos aseguramos que tenga https: si no lo tiene
+        if juego.cover_url and not juego.cover_url.startswith('http'):
+            juego.cover_url = f"https:{juego.cover_url}"
 
-    if request.method == "POST":
-        list_id = request.POST.get("list_id")
-        comment = request.POST.get("comment")
-
-        target_list = get_object_or_404(GameList, id=list_id, user=request.user)
-
-        if not ListEntry.objects.filter(game_list=target_list, game=game).exists():
-            ListEntry.objects.create(
-                game_list=target_list,
-                game=game,
-                comment=comment,
-                order=target_list.entries.count() + 1,
-            )
-        return redirect("detail", game_id=game_id)
-
-    my_lists = GameList.objects.filter(user=request.user)
-    return render(
-        request, "games/lists/add_to_list.html", {"game": game, "my_lists": my_lists}
-    )
+    if request.method == 'POST':
+        lista_id = request.POST.get('lista_id')
+        lista = get_object_or_404(GameList, id=lista_id, user=request.user)
+        
+        # Guardamos el juego en la lista (ajusta 'game_list' si tu modelo usa otro nombre)
+        if not ListEntry.objects.filter(game_list=lista, game=juego).exists():
+            ListEntry.objects.create(game_list=lista, game=juego)
+            
+        return redirect('list_detail', username=request.user.username, slug=lista.slug)
+        
+    return render(request, 'games/lists/add_to_list.html', {
+        'juego': juego,
+        'listas': listas
+    })
 
 @login_required
 def toggle_like(request, review_id):
@@ -710,3 +755,58 @@ def quick_log_save(request):
         return JsonResponse({'success': True})
         
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def user_lists(request, username):
+    # Buscamos al usuario por su nombre
+    perfil_usuario = get_object_or_404(User, username=username)
+    
+    # Traemos todas sus listas, de la más nueva a la más antigua
+    listas = GameList.objects.filter(user=perfil_usuario).order_by('-created_at')
+    
+    return render(request, 'games/lists/user_lists.html', {
+        'perfil_usuario': perfil_usuario,
+        'listas': listas
+    })
+
+@login_required
+def edit_list(request, username, slug):
+    lista = get_object_or_404(GameList, user__username=username, slug=slug)
+    
+    # Seguridad: Si el usuario actual no es el dueño, lo devolvemos a la lista
+    if request.user != lista.user:
+        return redirect('list_detail', username=username, slug=slug)
+        
+    if request.method == 'POST':
+        # Recogemos los datos del formulario
+        lista.name = request.POST.get('name', lista.name)
+        lista.description = request.POST.get('description', lista.description)
+        lista.save()
+        return redirect('list_detail', username=username, slug=slug)
+        
+    return render(request, 'games/lists/edit_list.html', {'lista': lista})
+
+@login_required
+def delete_list(request, username, slug):
+    lista = get_object_or_404(GameList, user__username=username, slug=slug)
+    
+    # Seguridad
+    if request.user != lista.user:
+        return redirect('list_detail', username=username, slug=slug)
+        
+    if request.method == 'POST':
+        lista.delete()
+        # Al borrarla, lo mandamos a su página de "Mis Listas"
+        return redirect('user_lists', username=username)
+        
+    return render(request, 'games/lists/delete_list.html', {'lista': lista})
+
+@login_required
+def remove_from_list(request, list_id, game_id):
+    from .models import GameList, ListEntry
+    
+    lista = get_object_or_404(GameList, id=list_id, user=request.user)
+    entry = get_object_or_404(ListEntry, game_list=lista, game__igdb_id=game_id)
+    
+    entry.delete()
+    
+    return redirect('list_detail', username=request.user.username, slug=lista.slug)

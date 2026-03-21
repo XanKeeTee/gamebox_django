@@ -1,0 +1,41 @@
+{% extends 'games/base.html' %}
+
+{% block title %}Editar {{ lista.name }} - GameBox{% endblock %}
+
+{% block content %}
+<main class="py-12 px-6 max-w-2xl mx-auto min-h-[75vh]">
+    <div class="mb-8">
+        <a href="{% url 'list_detail' lista.user.username lista.slug %}" class="text-indigo-400 hover:text-white text-sm font-bold transition flex items-center gap-2 mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a la lista
+        </a>
+        <h1 class="text-3xl font-black text-white">Editar Lista</h1>
+    </div>
+
+    <div class="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 shadow-xl">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nombre de la lista</label>
+                <input type="text" name="name" value="{{ lista.name }}" required 
+                       class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Descripción (Opcional)</label>
+                <textarea name="description" rows="4" 
+                          class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition">{{ lista.description|default_if_none:'' }}</textarea>
+            </div>
+
+            <div class="flex justify-end gap-4">
+                <a href="{% url 'list_detail' lista.user.username lista.slug %}" class="px-6 py-3 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-indigo-500/25 transition hover:scale-105 flex items-center gap-2">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+{% endblock %}
