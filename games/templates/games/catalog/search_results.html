@@ -1,52 +1,43 @@
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscar: {{ query }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;700;800&display=swap');
-        body { font-family: 'Manrope', sans-serif; background-color: #050505; color: white; }
-    </style>
-</head>
-<body class="min-h-screen">
+{% extends 'games/base.html' %}
 
-    <nav class="p-6 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto flex items-center gap-4">
-            <a href="{% url 'index' %}" class="font-bold text-gray-400 hover:text-white">← Inicio</a>
-            <h1 class="text-xl font-bold">Resultados para "<span class="text-indigo-400">{{ query }}</span>"</h1>
-        </div>
-    </nav>
+{% block title %}Resultados para "{{ query }}" - GameBox{% endblock %}
 
-    <main class="max-w-7xl mx-auto px-6 py-12">
-        {% if games %}
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                {% for game in games %}
-                <a href="{% url 'detail' game.id %}" class="group block relative cursor-pointer">
-                    <div class="relative aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-800 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-indigo-500/20 ring-1 ring-white/5">
-                        {% if game.cover %}
-                            <img src="https:{{ game.cover.url }}" class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        {% endif %}
-                        
-                        <div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
-                            <h3 class="text-sm font-bold leading-tight text-gray-200 group-hover:text-white">{{ game.name }}</h3>
-                            {% if game.first_release_date %}
-                                <span class="text-xs text-gray-500">{{ game.first_release_date|date:"Y" }}</span>
-                            {% endif %}
-                        </div>
+{% block content %}
+<main class="max-w-7xl mx-auto px-6 py-12">
+    
+    <div class="mb-12 border-b border-white/5 pb-8">
+        <h1 class="text-4xl font-black tracking-tighter text-white mb-2">Resultados de búsqueda</h1>
+        <p class="text-gray-500 text-sm font-medium">Mostrando resultados para: <span class="text-indigo-400 font-bold">"{{ query }}"</span></p>
+    </div>
+
+    {% if games %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {% for game in games %}
+            <a href="{% url 'detail' game.id %}" class="group relative block aspect-[3/4] bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 hover:border-pink-500/50 transition-all duration-500 shadow-lg hover:shadow-pink-500/10 hover:-translate-y-2">
+                {% if game.cover %}
+                    <img src="{{ game.cover.url }}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-zinc-700">
+                        <i class="fas fa-gamepad text-3xl"></i>
                     </div>
-                </a>
-                {% endfor %}
+                {% endif %}
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                    <p class="text-white font-bold text-xs leading-tight drop-shadow-md">{{ game.name }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="flex flex-col items-center justify-center py-32 text-center">
+            <div class="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-white/5">
+                <i class="fas fa-ghost text-3xl text-zinc-700"></i>
             </div>
-        {% else %}
-            <div class="text-center py-20">
-                <div class="text-6xl mb-4">👾</div>
-                <h2 class="text-2xl font-bold mb-2">Game Over</h2>
-                <p class="text-gray-500">No encontramos nada con ese nombre. Prueba otra vez.</p>
-            </div>
-        {% endif %}
-    </main>
+            <h3 class="text-xl font-bold text-white mb-2">No hemos encontrado nada</h3>
+            <p class="text-gray-500 max-w-xs mx-auto">Parece que el juego "{{ query }}" se está escondiendo muy bien. Intenta con otro nombre.</p>
+            <a href="{% url 'explore' %}" class="mt-8 text-indigo-400 font-bold hover:text-white transition">Ir al explorador avanzado →</a>
+        </div>
+    {% endif %}
 
-</body>
-</html>
+</main>
+{% endblock %}

@@ -1,131 +1,170 @@
 {% extends 'games/base.html' %}
 
+{% block title %}Explorar - GameBox{% endblock %}
+
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
-
-<style>
-    /* Estilos oscuros para el buscador por teclado */
-    .ts-control { background-color: rgba(0,0,0,0.5) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; border-radius: 0.5rem !important; padding: 0.75rem !important; }
-    .ts-control > input { color: white !important; }
-    .ts-dropdown { background-color: #18181b !important; color: white !important; border: 1px solid rgba(255,255,255,0.1) !important; border-radius: 0.5rem !important; }
-    .ts-dropdown .option:hover, .ts-dropdown .option.active { background-color: #4f46e5 !important; color: white !important; }
-</style>
-
-<div class="max-w-7xl mx-auto px-6 py-12">
-    <h1 class="text-3xl font-black text-white mb-8">🔍 Explorador Avanzado</h1>
-
-    <form method="get" class="bg-zinc-900 p-6 rounded-2xl border border-white/10 mb-12 shadow-xl">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Plataforma</label>
-                <select name="platform" class="searchable-select" placeholder="Escribe o selecciona...">
-                    <option value="all">Todas las plataformas</option>
-                    <option value="6" {% if selected_platform == '6' %}selected{% endif %}>PC (Windows)</option>
-                    <option value="167" {% if selected_platform == '167' %}selected{% endif %}>PlayStation 5</option>
-                    <option value="48" {% if selected_platform == '48' %}selected{% endif %}>PlayStation 4</option>
-                    <option value="9" {% if selected_platform == '9' %}selected{% endif %}>PlayStation 3</option>
-                    <option value="8" {% if selected_platform == '8' %}selected{% endif %}>PlayStation 2</option>
-                    <option value="169" {% if selected_platform == '169' %}selected{% endif %}>Xbox Series X/S</option>
-                    <option value="49" {% if selected_platform == '49' %}selected{% endif %}>Xbox One</option>
-                    <option value="12" {% if selected_platform == '12' %}selected{% endif %}>Xbox 360</option>
-                    <option value="130" {% if selected_platform == '130' %}selected{% endif %}>Nintendo Switch</option>
-                    <option value="41" {% if selected_platform == '41' %}selected{% endif %}>Wii U</option>
-                    <option value="5" {% if selected_platform == '5' %}selected{% endif %}>Wii</option>
-                    <option value="37" {% if selected_platform == '37' %}selected{% endif %}>Nintendo 3DS</option>
-                    <option value="20" {% if selected_platform == '20' %}selected{% endif %}>Nintendo DS</option>
-                    <option value="34" {% if selected_platform == '34' %}selected{% endif %}>Android</option>
-                    <option value="39" {% if selected_platform == '39' %}selected{% endif %}>iOS</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Género</label>
-                <select name="genre" class="searchable-select" placeholder="Escribe o selecciona...">
-                    <option value="all">Todos los géneros</option>
-                    <option value="12" {% if selected_genre == '12' %}selected{% endif %}>RPG</option>
-                    <option value="5" {% if selected_genre == '5' %}selected{% endif %}>Shooter</option>
-                    <option value="31" {% if selected_genre == '31' %}selected{% endif %}>Aventura</option>
-                    <option value="8" {% if selected_genre == '8' %}selected{% endif %}>Plataformas</option>
-                    <option value="14" {% if selected_genre == '14' %}selected{% endif %}>Deportes</option>
-                    <option value="10" {% if selected_genre == '10' %}selected{% endif %}>Carreras</option>
-                    <option value="4" {% if selected_genre == '4' %}selected{% endif %}>Lucha</option>
-                    <option value="15" {% if selected_genre == '15' %}selected{% endif %}>Estrategia</option>
-                    <option value="13" {% if selected_genre == '13' %}selected{% endif %}>Simulador</option>
-                    <option value="32" {% if selected_genre == '32' %}selected{% endif %}>Indie</option>
-                    <option value="9" {% if selected_genre == '9' %}selected{% endif %}>Puzle</option>
-                    <option value="33" {% if selected_genre == '33' %}selected{% endif %}>Arcade</option>
-                    <option value="25" {% if selected_genre == '25' %}selected{% endif %}>Hack and slash/Beat 'em up</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Año</label>
-                <select name="year" class="searchable-select" placeholder="Escribe o selecciona...">
-                    <option value="all">Cualquier año</option>
-                    <option value="2026" {% if selected_year == '2026' %}selected{% endif %}>2026</option>
-                    <option value="2025" {% if selected_year == '2025' %}selected{% endif %}>2025</option>
-                    <option value="2024" {% if selected_year == '2024' %}selected{% endif %}>2024</option>
-                    <option value="2023" {% if selected_year == '2023' %}selected{% endif %}>2023</option>
-                    <option value="2022" {% if selected_year == '2022' %}selected{% endif %}>2022</option>
-                    <option value="2021" {% if selected_year == '2021' %}selected{% endif %}>2021</option>
-                    <option value="2020" {% if selected_year == '2020' %}selected{% endif %}>2020</option>
-                    <option value="2019" {% if selected_year == '2019' %}selected{% endif %}>2019</option>
-                    <option value="2018" {% if selected_year == '2018' %}selected{% endif %}>2018</option>
-                    <option value="2015" {% if selected_year == '2015' %}selected{% endif %}>2015</option>
-                    <option value="2010" {% if selected_year == '2010' %}selected{% endif %}>2010</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Nota Mínima</label>
-                <select name="rating" class="searchable-select" placeholder="Escribe o selecciona...">
-                    <option value="all">Cualquiera</option>
-                    <option value="90" {% if selected_rating == '90' %}selected{% endif %}>90+ (Obras Maestras)</option>
-                    <option value="80" {% if selected_rating == '80' %}selected{% endif %}>80+ (Muy Buenos)</option>
-                    <option value="70" {% if selected_rating == '70' %}selected{% endif %}>70+ (Buenos)</option>
-                </select>
-            </div>
-        </div>
+<div class="max-w-[1600px] mx-auto px-6 py-10 min-h-screen">
+    
+    <div class="flex flex-col lg:flex-row gap-10">
         
-        <button type="submit" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-500/20">
-            Aplicar Filtros
-        </button>
-    </form>
+        <!-- SIDEBAR DE FILTROS DINÁMICOS -->
+        <aside class="w-full lg:w-72 shrink-0">
+            <div class="sticky top-24 space-y-8">
+                <h2 class="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-6 italic underline decoration-pink-500 decoration-2 underline-offset-8">Filtros Avanzados</h2>
+                
+                <form action="{% url 'explore' %}" method="GET" id="filter-form" class="space-y-6">
+                    {% if query_text %}<input type="hidden" name="q" value="{{ query_text }}">{% endif %}
+                    <input type="hidden" name="sort" value="{{ current_sort }}">
 
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-        {% for game in games %}
-        <a href="{% url 'detail' game.id %}" class="group relative bg-zinc-900 rounded-xl overflow-hidden hover:-translate-y-2 transition duration-300 shadow-lg border border-white/5">
-            <div class="aspect-[3/4] overflow-hidden">
-                {% if game.cover %}
-                    <img src="https:{{ game.cover.url }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                {% endif %}
+                    <!-- Año -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-zinc-400 uppercase">Año</label>
+                        <input type="number" name="year" placeholder="Cualquier año" value="{{ current_filters.year }}" 
+                               class="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition shadow-inner">
+                    </div>
+
+                    <!-- Géneros Dinámicos -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-zinc-400 uppercase">Género</label>
+                        <select name="genre" class="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition cursor-pointer custom-select">
+                            <option value="">Todos los géneros</option>
+                            {% for g in all_genres %}
+                                <option value="{{ g.id }}" {% if current_filters.genre == g.id|slugify %}selected{% endif %}>{{ g.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Plataformas Dinámicas -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-zinc-400 uppercase">Plataforma</label>
+                        <select name="platform" class="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition cursor-pointer custom-select">
+                            <option value="">Todas las plataformas</option>
+                            {% for p in all_platforms %}
+                                <option value="{{ p.id }}" {% if current_filters.platform == p.id|slugify %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Tipo (Categoría) -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-zinc-400 uppercase">Tipo de Lanzamiento</label>
+                        <select name="category" class="w-full bg-zinc-900 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition cursor-pointer custom-select">
+                            <option value="">Cualquier tipo</option>
+                            <option value="0" {% if current_filters.category == "0" %}selected{% endif %}>Juego Base</option>
+                            <option value="1" {% if current_filters.category == "1" %}selected{% endif %}>DLC / Add-on</option>
+                            <option value="2" {% if current_filters.category == "2" %}selected{% endif %}>Expansión</option>
+                            <option value="10" {% if current_filters.category == "10" %}selected{% endif %}>Remake</option>
+                            <option value="11" {% if current_filters.category == "11" %}selected{% endif %}>Remaster</option>
+                        </select>
+                    </div>
+
+                    <!-- Nota -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-bold text-zinc-400 uppercase">Nota Mínima</label>
+                        <input type="range" name="rating" min="0" max="100" step="10" value="{{ current_filters.rating|default:0 }}"
+                               class="w-full accent-pink-600 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-zinc-600 font-bold">
+                            <span>0%</span><span>100%</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex flex-col gap-3">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl shadow-lg transition-all active:scale-95 text-xs tracking-widest uppercase">
+                            Actualizar Lista
+                        </button>
+                        <a href="{% url 'explore' %}" class="block text-center text-[10px] font-bold text-zinc-600 hover:text-white transition uppercase tracking-widest">
+                            Limpiar Filtros
+                        </a>
+                    </div>
+                </form>
             </div>
-            <div class="p-4">
-                <h3 class="font-bold text-white text-sm line-clamp-1 group-hover:text-indigo-400 transition">{{ game.name }}</h3>
-                {% if game.total_rating %}
-                    <div class="text-xs font-bold text-green-400 mt-1">{{ game.total_rating|floatformat:0 }}%</div>
-                {% endif %}
+        </aside>
+
+        <!-- RESULTADOS -->
+        <div class="flex-1">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/5">
+                <div>
+                    <h1 class="text-4xl font-black text-white tracking-tighter">Explorar</h1>
+                    <p class="text-zinc-500 text-xs font-bold uppercase tracking-wider mt-1">Descubre nuevos mundos</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Ordenar por</span>
+                    <form action="{% url 'explore' %}" method="GET">
+                        {% for key, value in current_filters.items %}
+                            {% if key != 'sort' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+                        {% endfor %}
+                        <select name="sort" onchange="this.form.submit()" class="bg-zinc-900 border border-white/10 rounded-lg px-4 py-2 text-xs font-black text-white outline-none cursor-pointer focus:border-indigo-500 hover:bg-zinc-800 transition appearance-none pr-10 relative">
+                            <option value="popularity" {% if current_sort == 'popularity' %}selected{% endif %}>Popularidad</option>
+                            <option value="rating" {% if current_sort == 'rating' %}selected{% endif %}>Mejor Nota</option>
+                            <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Más Recientes</option>
+                        </select>
+                    </form>
+                </div>
             </div>
-        </a>
-        {% empty %}
-        <div class="col-span-full text-center py-12 text-gray-500 font-bold bg-zinc-900/50 rounded-2xl border border-dashed border-white/10">
-            <i class="fas fa-search text-4xl mb-4 block text-gray-600"></i>
-            Selecciona los filtros arriba y dale a aplicar para descubrir nuevos juegos.
+
+            <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-6">
+                {% include 'games/catalog/_game_grid_items.html' %}
+            </div>
+
+            <!-- Loader para el scroll infinito -->
+            <div id="infinite-loader" class="py-12 flex justify-center items-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
+            </div>
         </div>
-        {% endfor %}
     </div>
 </div>
 
+<style>
+    /* Estilo para que el dropdown no se vea blanco en algunos navegadores */
+    .custom-select option {
+        background-color: #18181b;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll('.searchable-select').forEach((el) => {
-            new TomSelect(el, {
-                create: false,
-                sortField: { field: "text", direction: "asc" }
+    let page = {{ next_page|default:2 }};
+    let loading = false;
+    let endOfResults = false;
+    const loader = document.getElementById('infinite-loader');
+    const gameGrid = document.getElementById('game-grid');
+
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !loading && !endOfResults) {
+            loadMoreGames();
+        }
+    }, { threshold: 1.0 });
+
+    observer.observe(loader);
+
+    async function loadMoreGames() {
+        loading = true;
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('page', page);
+        
+        try {
+            const response = await fetch(`${window.location.pathname}?${urlParams.toString()}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-        });
-    });
+            
+            const html = await response.text();
+            
+            if (html.trim() === "") {
+                endOfResults = true;
+                loader.innerHTML = "<p class='text-zinc-500 text-xs font-bold uppercase tracking-widest'>No hay más juegos que mostrar</p>";
+                return;
+            }
+
+            gameGrid.insertAdjacentHTML('beforeend', html);
+            page++;
+            loading = false;
+        } catch (error) {
+            console.error("Error al cargar más juegos:", error);
+            loading = false;
+        }
+    }
 </script>
 {% endblock %}

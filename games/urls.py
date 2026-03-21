@@ -7,7 +7,6 @@ urlpatterns = [
     path("game/<int:game_id>/", views.detail, name="detail"),
     path("game/<int:game_id>/add/<str:status>/", views.add_to_library, name="add_to_library"),
     path("profile/", views.profile, name="profile"),
-    path("search/", views.search, name="search"),
     path("game/<int:game_id>/review/", views.update_review, name="update_review"),
     path("profile/edit/", views.edit_profile, name="edit_profile"),
     path("register/", views.register, name="register"),
@@ -36,4 +35,6 @@ urlpatterns = [
     path('profile/<str:username>/lists/<slug:slug>/delete/', views.delete_list, name='delete_list'),
     path('game/<int:game_id>/add-to-list/', views.add_to_list_view, name='add_to_list'),
     path('list/<int:list_id>/remove/<int:game_id>/', views.remove_from_list, name='remove_from_list'),
+    path('explore/', views.explore, name='explore'),
+    path('search/', views.explore, name='search')
 ]

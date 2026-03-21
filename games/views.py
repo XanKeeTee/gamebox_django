@@ -1,13 +1,14 @@
 import json,random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+import requests
 from .services import IGDBService
 from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db.models import Q, Count
-from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notification
+from .models import Game, UserGame, Profile, Comment, GameList, ListEntry, Notification,News, UserGame
 from django.http import HttpResponseNotFound, JsonResponse
 from django.views.decorators.cache import cache_page
 from django.contrib import messages
@@ -16,55 +17,88 @@ from .forms import GameListForm
 from django.utils.text import slugify
 
 def index(request):
-    service = IGDBService()
+    import requests
+    import random
+    from .services import IGDBService
+    from .models import News, UserGame, GameList
+
+    # 1. NOTICIAS (Normalización para evitar errores de VariableDoesNotExist)
+    news_api_key = "c015bf30b0fa40d59cb58a571abb2267"
+    news_url = f"https://newsapi.org/v2/everything?q=videojuegos&language=es&sortBy=publishedAt&pageSize=3&apiKey={news_api_key}"
     
-    # 1. Traer Trending Games (ahora serán recientes)
+    noticias_finales = []
+    try:
+        news_res = requests.get(news_url)
+        articles = news_res.json().get('articles', [])
+        for a in articles:
+            noticias_finales.append({
+                'titulo': a.get('title'),
+                'foto': a.get('urlToImage'),
+                'fuente': a.get('source', {}).get('name'),
+                'resumen': a.get('description'),
+                'enlace': a.get('url'),
+                'fecha': a.get('publishedAt')
+            })
+    except:
+        # Si falla la API, usamos las noticias locales
+        news_locales = News.objects.all().order_by('-created_at')[:3]
+        for n in news_locales:
+            noticias_finales.append({
+                'titulo': n.title,
+                'foto': n.image_url,
+                'fuente': n.source,
+                'resumen': n.content,
+                'enlace': '#',
+                'fecha': n.created_at
+            })
+
+    # 2. LÓGICA DE JUEGOS (IGDB)
+    service = IGDBService()
     trending_games = service.get_top_games()
     
-    # ELEGIR UN HERO ALEATORIO entre los 5 primeros para dar dinamismo
+    # Hero Game
     hero_game = None
     if trending_games:
         hero_game = random.choice(trending_games[:5])
-        # Lo quitamos de la lista para que no se duplique abajo
         trending_games = [g for g in trending_games if g['id'] != hero_game['id']]
         if 'cover' in hero_game:
             hero_game['cover']['url'] = hero_game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 2. Traer Upcoming Games
+    # Top Games y Upcoming
+    query = 'fields name, cover.url, total_rating; sort popularity desc; limit 6; where total_rating > 80;'
+    response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query)
+    top_games = response.json() if response.status_code == 200 else []
+    for g in top_games:
+        if 'cover' in g:
+            g['cover']['url'] = f"https:{g['cover']['url'].replace('t_thumb', 't_cover_big')}"
+
     upcoming_games = service.get_upcoming_games()[:10]
     for game in upcoming_games:
         if 'cover' in game:
             game['cover']['url'] = game['cover']['url'].replace('t_thumb', 't_cover_big')
 
-    # 3. Construir el Feed
+    # 3. FEED Y LISTAS
     feed_items = []
-    es_feed_global = False # Variable para saber qué título mostrar en el HTML
-    
+    es_feed_global = False
     if request.user.is_authenticated:
         following_ids = request.user.profile.follows.values_list('user__id', flat=True)
-        feed_items = UserGame.objects.filter(user__id__in=following_ids) \
-            .exclude(status='backlog') \
-            .select_related('user__profile', 'game') \
-            .prefetch_related('comments__user__profile', 'likes') \
-            .order_by('-updated_at')[:20]
+        feed_items = UserGame.objects.filter(user__id__in=following_ids).exclude(status='backlog').order_by('-updated_at')[:20]
             
-    # SI EL FEED ESTÁ VACÍO (no sigue a nadie o no está logueado), mostramos Actividad Global
     if not feed_items:
-        feed_items = UserGame.objects.exclude(review__isnull=True).exclude(review="") \
-            .select_related('user__profile', 'game') \
-            .order_by('-updated_at')[:15]
+        feed_items = UserGame.objects.exclude(review__isnull=True).exclude(review="").order_by('-updated_at')[:15]
         es_feed_global = True
         
-    # 4. (Opcional) Extraer las últimas listas creadas por los usuarios
     recent_lists = GameList.objects.select_related('user').order_by('-created_at')[:3]
         
     return render(request, 'games/home/index.html', {
         'hero_game': hero_game,
-        'trending_games': trending_games[:8], # Pasamos solo 8 a la barra lateral
+        'trending_games': trending_games[:8],
         'upcoming': upcoming_games,
         'feed_items': feed_items,
         'es_feed_global': es_feed_global,
-        'recent_lists': recent_lists
+        'recent_lists': recent_lists,
+        'noticias': noticias_finales, # Usamos la lista normalizada
+        'top_games': top_games
     })
 
 def detail(request, game_id):
@@ -202,24 +236,84 @@ def profile(request):
     return render(request, 'games/profile/profile.html', context)
 
 
+def explore(request):
+    import requests
+    from datetime import datetime
+    service = IGDBService()
+    
+    # Capturamos todos los posibles filtros
+    query_text = request.GET.get('q')
+    genre = request.GET.get('genre')
+    platform = request.GET.get('platform')
+    year = request.GET.get('year')
+    min_rating = request.GET.get('rating')
+    sort_by = request.GET.get('sort', 'popularity')
+
+    filters = []
+    
+    # Si viene texto desde el buscador de arriba
+    if query_text:
+        filters.append(f'name ~ *"{query_text}"*')
+    
+    # Filtros avanzados del lateral
+    if genre: filters.append(f'genres = ({genre})')
+    if platform: filters.append(f'platforms = ({platform})')
+    if min_rating and min_rating != '0': filters.append(f'total_rating >= {min_rating}')
+    
+    if year:
+        try:
+            start = int(datetime(int(year), 1, 1).timestamp())
+            end = int(datetime(int(year), 12, 31).timestamp())
+            filters.append(f'first_release_date >= {start} & first_release_date <= {end}')
+        except: pass
+
+    # Si no hay filtros, mostramos juegos populares por defecto
+    where_clause = f"where {' & '.join(filters)};" if filters else "where total_rating_count > 20 & themes != (42);"
+    
+    # Ordenación
+    order = "sort popularity desc;"
+    if sort_by == 'rating': order = "sort total_rating desc;"
+    elif sort_by == 'newest': order = "sort first_release_date desc;"
+
+    query = f'fields name, cover.url, first_release_date, total_rating; {where_clause} {order} limit 50;'
+    
+    response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query)
+    games = response.json() if response.status_code == 200 and isinstance(response.json(), list) else []
+
+    for g in games:
+        if 'cover' in g:
+            g['cover']['url'] = f"https:{g['cover']['url'].replace('t_thumb', 't_cover_big')}"
+
+    return render(request, 'games/catalog/advanced_search.html', {
+        'games': games,
+        'current_filters': request.GET,
+        'query_text': query_text
+    })
+
 def search(request):
-    query = request.GET.get("q")
-    games = []
+    import requests
+    query_user = request.GET.get('q') # Recoge lo que viene del input name="q"
+    
+    if not query_user:
+        return redirect('index')
 
-    if query:
-        service = IGDBService()
-        games = service.search_games(query)
+    service = IGDBService()
+    
+    # Buscamos juegos que coincidan con el nombre
+    query = f'search "{query_user}"; fields name, cover.url, first_release_date, total_rating; limit 24;'
+    
+    response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query)
+    games = response.json() if response.status_code == 200 else []
 
-        for game in games:
-            if "cover" in game:
-                game["cover"]["url"] = game["cover"]["url"].replace(
-                    "t_thumb", "t_cover_big"
-                )
+    # Corregimos las URLs de las portadas
+    for g in games:
+        if 'cover' in g:
+            g['cover']['url'] = f"https:{g['cover']['url'].replace('t_thumb', 't_cover_big')}"
 
-    return render(
-        request, "games/catalog/search_results.html", {"games": games, "query": query}
-    )
-
+    return render(request, 'games/catalog/search_results.html', {
+        'games': games,
+        'query': query_user
+    })
 
 @login_required(login_url="/admin/login/")
 @require_POST
@@ -524,25 +618,77 @@ def category(request, genre_id):
     return render(request, 'games/home/category.html', {'games': games, 'title': title})
 
 def advanced_search(request):
-    platform = request.GET.get('platform')
-    genre = request.GET.get('genre')
-    year = request.GET.get('year')
-    min_rating = request.GET.get('rating')
+    import requests
+    from datetime import datetime
+    service = IGDBService()
     
-    games = []
-    # Solo buscamos en la API si el usuario ha tocado algún filtro
-    if platform or genre or year or min_rating:
-        # Importamos el servicio si no estaba ya importado arriba
-        from .services import IGDBService 
-        service = IGDBService()
-        games = service.advanced_search(platform, genre, year, min_rating)
-        
+    # 1. Traer todos los GÉNEROS para el filtro
+    genres_res = requests.post(f"{service.base_url}/genres", headers=service.headers, 
+                               data='fields name; limit 50; sort name asc;')
+    all_genres = genres_res.json() if genres_res.status_code == 200 else []
+
+    # 2. Traer todas las PLATAFORMAS para el filtro
+    platforms_res = requests.post(f"{service.base_url}/platforms", headers=service.headers, 
+                                  data='fields name; limit 500; sort name asc;')
+    all_platforms = platforms_res.json() if platforms_res.status_code == 200 else []
+
+    # Lógica de paginación para el scroll infinito
+    page = int(request.GET.get('page', 1))
+    limit = 48
+    offset = (page - 1) * limit
+
+    # Captura de filtros
+    query_text = request.GET.get('q', '')
+    genre = request.GET.get('genre', '')
+    platform = request.GET.get('platform', '')
+    category = request.GET.get('category', '')
+    year = request.GET.get('year', '')
+    min_rating = request.GET.get('rating', '0')
+    sort_by = request.GET.get('sort', 'popularity')
+
+    filters = []
+    if query_text: filters.append(f'name ~ *"{query_text}"*')
+    if genre: filters.append(f'genres = ({genre})')
+    if platform: filters.append(f'platforms = ({platform})')
+    if category: filters.append(f'category = {category}')
+    if min_rating and min_rating != '0': filters.append(f'total_rating >= {min_rating}')
+    
+    if year:
+        try:
+            start = int(datetime(int(year), 1, 1).timestamp())
+            end = int(datetime(int(year), 12, 31).timestamp())
+            filters.append(f'first_release_date >= {start} & first_release_date <= {end}')
+        except: pass
+
+    if not filters:
+        where_clause = "where total_rating_count > 100 & version_parent = null & themes != (42);"
+    else:
+        where_clause = f"where {' & '.join(filters)} & version_parent = null;"
+    
+    if sort_by == 'rating': order = "sort total_rating desc;"
+    elif sort_by == 'newest': order = "sort first_release_date desc;"
+    else: order = "sort popularity desc;"
+
+    query = f'fields name, cover.url, first_release_date, total_rating; {where_clause} {order} limit {limit}; offset {offset};'
+    
+    response = requests.post(f"{service.base_url}/games", headers=service.headers, data=query)
+    games = response.json() if response.status_code == 200 and isinstance(response.json(), list) else []
+
+    for g in games:
+        if 'cover' in g:
+            g['cover']['url'] = f"https:{g['cover']['url'].replace('t_thumb', 't_cover_big')}"
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'games/catalog/_game_grid_items.html', {'games': games})
+
     return render(request, 'games/catalog/advanced_search.html', {
         'games': games,
-        'selected_platform': platform,
-        'selected_genre': genre,
-        'selected_year': year,
-        'selected_rating': min_rating
+        'all_genres': all_genres,
+        'all_platforms': all_platforms,
+        'current_filters': request.GET,
+        'query_text': query_text,
+        'current_sort': sort_by,
+        'next_page': page + 1
     })
 
 @login_required

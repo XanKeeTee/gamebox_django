@@ -139,3 +139,14 @@ class Notification(models.Model):
     target_object_id = models.IntegerField(null=True, blank=True)
     class Meta:
         ordering = ['-date']
+
+class News(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    image_url = models.URLField(blank=True, null=True)
+    source = models.CharField(max_length=100, default="GameBox News")
+    created_at = models.DateTimeField(auto_now_add=True)
+    slug = models.SlugField(unique=True, blank=True)
+
+    def __str__(self):
+        return self.title
